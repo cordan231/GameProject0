@@ -18,7 +18,7 @@ namespace GameProject0
         private SpriteBatch _spriteBatch;
         private SpriteFont _spriteFont;
 
-        private Texture2D _backgroundTexture;
+        private Texture2D _backgroundTexture, _titleTexture;
 
         private PlayerSprite _playerSprite;
         private InputManager _inputManager;
@@ -61,11 +61,12 @@ namespace GameProject0
             // TODO: use this.Content to load your game content here
             
             _playerSprite.LoadContent(Content);
-            _playerSprite.Position = new Vector2(300, 300);
+            _playerSprite.Position = new Vector2(300, 140);
 
             _spriteFont = Content.Load<SpriteFont>("vcr");
 
-            _backgroundTexture = Content.Load<Texture2D>("orig");
+            _backgroundTexture = Content.Load<Texture2D>("platform-background");
+            _titleTexture = Content.Load<Texture2D>("runner");
 
         }
 
@@ -108,18 +109,27 @@ namespace GameProject0
                 _playerSprite.SetState(CurrentState.Idle);
             }
 
-            // Move the sprite left and right based on input
             _playerSprite.Position += _inputManager.Direction * 150f * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // Constrain the sprite's position to the screen
-            _playerSprite.Position = Vector2.Clamp(_playerSprite.Position, Vector2.Zero, new Vector2(_graphics.PreferredBackBufferWidth - 32, _graphics.PreferredBackBufferHeight - 32));
+            _playerSprite.Position = Vector2.Clamp(_playerSprite.Position, Vector2.Zero, new Vector2(_graphics.PreferredBackBufferWidth - _playerSprite.Width, _graphics.PreferredBackBufferHeight - _playerSprite.Height));
 
             if (_inputManager.Select)
             {
-                // Find the selected menu item based on the sprite's position
                 int selectedIndex = GetSelectedMenuIndex();
                 if (selectedIndex != -1)
                 {
+                    switch (selectedIndex)
+                    {
+                        case 0:
+                            System.Console.WriteLine("Selected: START GAME");
+                            break;
+                        case 1:
+                            System.Console.WriteLine("Selected: OPTIONS");
+                            break;
+                        case 2:
+                            Exit();
+                            break;
+                    }
                     System.Console.WriteLine($"Selected: {_menuItems[selectedIndex]}");
                 }
             }
@@ -148,10 +158,10 @@ namespace GameProject0
                 );
 
                 Rectangle spriteRect = new Rectangle(
-                    (int)_playerSprite.Position.X,
+                    (int)(_playerSprite.Position.X + _playerSprite.Width / 2),
                     (int)_playerSprite.Position.Y,
-                    32,
-                    32
+                    1,
+                    (int)_playerSprite.Height
                 );
 
                 if (textRect.Intersects(spriteRect))
@@ -188,6 +198,9 @@ namespace GameProject0
 
             _spriteBatch.Draw(_backgroundTexture, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight), Color.White);
 
+            Vector2 titlePosition = new Vector2((_graphics.PreferredBackBufferWidth / 2f) - ((_titleTexture.Width * 3f) / 2f), 10f);
+            _spriteBatch.Draw(_titleTexture, titlePosition, null, Color.White, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+
             int selectedIndex = GetSelectedMenuIndex();
 
             Vector2 menuStartPos = new Vector2(
@@ -200,15 +213,21 @@ namespace GameProject0
                 Vector2 textSize = _spriteFont.MeasureString(_menuItems[i]);
                 Vector2 textPosition = new Vector2(
                     menuStartPos.X + i * _menuItemSpacing - textSize.X / 2f,
-                    menuStartPos.Y
+                    menuStartPos.Y - 50
                 );
 
-                // Set the color to white if the sprite is intersecting the text, otherwise set it to black.
                 Color color = (i == selectedIndex) ? Color.White : Color.Black;
 
-                // Draw the text
                 _spriteBatch.DrawString(_spriteFont, _menuItems[i], textPosition, color);
             }
+
+            string instructions = "<- / -> KEYS TO MOVE     ENTER BUTTON TO SELECT";
+            Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
+            Vector2 instructionsPosition = new Vector2(
+                _graphics.PreferredBackBufferWidth - instructionsSize.X - 10,
+                _graphics.PreferredBackBufferHeight - instructionsSize.Y - 10
+            );
+            _spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
 
             _playerSprite.Draw(_spriteBatch);
         }

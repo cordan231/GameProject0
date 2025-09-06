@@ -42,6 +42,9 @@ namespace GameProject0
         private const int FRAME_HEIGHT = 128;
         private const double FRAME_TIME_MS = 100;
 
+        public float Width { get { return FRAME_WIDTH * 2.0f; } }
+        public float Height { get { return FRAME_HEIGHT * 2.0f; } }
+
         public void LoadContent(ContentManager content)
         {
             _idleTexture = content.Load<Texture2D>("Stop_Running");
