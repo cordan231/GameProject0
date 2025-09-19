@@ -1,10 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GameProject0
 {
@@ -14,9 +9,7 @@ namespace GameProject0
         private KeyboardState _priorKeyboardState;
 
         public Vector2 Direction { get; private set; }
-
         public bool Exit { get; private set; } = false;
-
         public bool Select { get; private set; } = false;
 
         public void Update(GameTime gameTime)
@@ -27,11 +20,11 @@ namespace GameProject0
             Direction = Vector2.Zero;
             Select = false;
 
-            if (_currentKeyboardState.IsKeyDown(Keys.Left))
+            if (_currentKeyboardState.IsKeyDown(Keys.Left) || _currentKeyboardState.IsKeyDown(Keys.A))
             {
                 Direction += new Vector2(-1, 0);
             }
-            if (_currentKeyboardState.IsKeyDown(Keys.Right))
+            if (_currentKeyboardState.IsKeyDown(Keys.Right) || _currentKeyboardState.IsKeyDown(Keys.D))
             {
                 Direction += new Vector2(1, 0);
             }
@@ -41,12 +34,14 @@ namespace GameProject0
                 Select = true;
             }
 
-            if(_currentKeyboardState.IsKeyDown(Keys.Escape))
+            if (_currentKeyboardState.IsKeyDown(Keys.Escape) && _priorKeyboardState.IsKeyUp(Keys.Escape))
             {
                 Exit = true;
             }
-
+            else
+            {
+                Exit = false;
+            }
         }
-
     }
 }

@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+using GameProject0.Collisions;
 
 namespace GameProject0
 {
@@ -26,24 +21,45 @@ namespace GameProject0
     {
         private Texture2D _idleTexture;
         private Texture2D _runningTexture;
-
-        public Vector2 Position { get; set; }
-
+        private Vector2 _position;
         public Direction _currentDirection;
-
         private CurrentState _currentState;
-
         private Texture2D _currentTexture;
         private int _currentFrame;
         private int _totalFrames;
         private double _frameTimer;
 
+        public float Scale { get; set; } = 2.0f;
+
         private const int FRAME_WIDTH = 128;
         private const int FRAME_HEIGHT = 128;
         private const double FRAME_TIME_MS = 100;
 
-        public float Width { get { return FRAME_WIDTH * 2.0f; } }
-        public float Height { get { return FRAME_HEIGHT * 2.0f; } }
+        public BoundingRectangle Bounds { get; private set; }
+
+        public Vector2 Position
+        {
+            get => _position;
+            set
+            {
+                _position = value;
+
+                float boxWidth = (FRAME_WIDTH * Scale) * 0.35f;
+                float boxHeight = (FRAME_HEIGHT * Scale) * 0.6f;
+
+                float xOffset = (Width - boxWidth) / 2;
+                float yOffset = (FRAME_HEIGHT * Scale) * 0.4f;
+
+                Bounds = new BoundingRectangle(
+                    new Vector2(_position.X + xOffset, _position.Y + yOffset),
+                    boxWidth,
+                    boxHeight
+                );
+            }
+        }
+
+        public float Width => FRAME_WIDTH * Scale;
+        public float Height => FRAME_HEIGHT * Scale;
 
         public void LoadContent(ContentManager content)
         {
@@ -75,7 +91,7 @@ namespace GameProject0
             _currentFrame = 0;
             _frameTimer = 0;
 
-            switch(state)
+            switch (state)
             {
                 case CurrentState.Idle:
                     _currentTexture = _idleTexture;
@@ -86,7 +102,6 @@ namespace GameProject0
                     _totalFrames = 12;
                     break;
             }
-
         }
 
         public void SetDirection(Direction direction)
@@ -97,13 +112,9 @@ namespace GameProject0
         public void Draw(SpriteBatch spriteBatch)
         {
             var effects = (_currentDirection == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-
             Rectangle rect = new Rectangle(_currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
 
-            spriteBatch.Draw(_currentTexture, Position, rect, Color.White, 0f, Vector2.Zero, 2.0f, effects, 0f);
-
+            spriteBatch.Draw(_currentTexture, Position, rect, Color.White, 0f, Vector2.Zero, Scale, effects, 0f);
         }
-
-
     }
 }
