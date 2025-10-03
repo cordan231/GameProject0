@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -19,6 +20,7 @@ namespace GameProject0
         private SpriteFont _spriteFont;
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
+        private SoundEffect _coinPickup;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
@@ -36,6 +38,7 @@ namespace GameProject0
             _playerSprite.LoadContent(_content);
             _backgroundTexture = _content.Load<Texture2D>("platform-background");
             _spriteFont = _content.Load<SpriteFont>("vcr");
+            _coinPickup = _content.Load<SoundEffect>("pickup-coin");
 
             _playerSprite.Scale = 1.5f;
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
@@ -87,6 +90,7 @@ namespace GameProject0
                 {
                     _score++;
                     _coins.RemoveAt(i);
+                    _coinPickup.Play();
                 }
                 else if (_coins[i].Position.Y > viewport.Height)
                 {

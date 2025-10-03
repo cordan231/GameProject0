@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
 
 namespace GameProject0
 {
@@ -9,6 +11,7 @@ namespace GameProject0
         private SpriteBatch _spriteBatch;
         private ScreenManager _screenManager;
         private InputManager _inputManager;
+        private Song _backgroundMusic;
 
         public Game1()
         {
@@ -29,6 +32,10 @@ namespace GameProject0
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _screenManager.LoadScreen(new TitleScreen());
+            _backgroundMusic = Content.Load<Song>("background-music");
+            MediaPlayer.IsRepeating = true;
+            MediaPlayer.Play(_backgroundMusic);
+
         }
 
         protected override void Update(GameTime gameTime)
