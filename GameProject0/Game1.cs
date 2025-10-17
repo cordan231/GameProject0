@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using GameProject0.Particles;
+using System;
 
 namespace GameProject0
 {
@@ -16,6 +17,10 @@ namespace GameProject0
 
         public static Game1 Instance { get; private set; }
         public BloodSplatterParticleSystem BloodSplatters { get; private set; }
+
+        private float _screenShakeTimer = 0;
+        private float _screenShakeMagnitude = 0;
+        private Random _random = new Random();
 
         public Game1()
         {
@@ -56,16 +61,35 @@ namespace GameProject0
                 Exit();
             }
 
+            if (_screenShakeTimer > 0)
+            {
+                _screenShakeTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
             _screenManager.Update(gameTime, _inputManager);
 
             base.Update(gameTime);
+        }
+
+        public void ShakeScreen(float magnitude, float duration)
+        {
+            _screenShakeMagnitude = magnitude;
+            _screenShakeTimer = duration;
         }
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            _spriteBatch.Begin();
+            Matrix cameraTransform = Matrix.Identity;
+            if (_screenShakeTimer > 0)
+            {
+                float x = (_random.NextSingle() * 2 - 1) * _screenShakeMagnitude;
+                float y = (_random.NextSingle() * 2 - 1) * _screenShakeMagnitude;
+                cameraTransform = Matrix.CreateTranslation(x, y, 0);
+            }
+
+            _spriteBatch.Begin(transformMatrix: cameraTransform);
             _screenManager.Draw(gameTime, _spriteBatch);
             _spriteBatch.End();
 
@@ -73,4 +97,3 @@ namespace GameProject0
         }
     }
 }
-

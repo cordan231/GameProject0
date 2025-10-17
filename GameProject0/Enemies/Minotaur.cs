@@ -57,6 +57,15 @@ namespace GameProject0.Enemies
             }
         }
 
+        public Direction Direction
+        {
+            get => _direction;
+            set
+            {
+                _direction = value;
+            }
+        }
+
         public float Width => FRAME_WIDTH * Scale;
         public float Height => FRAME_HEIGHT * Scale;
 

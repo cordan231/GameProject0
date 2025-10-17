@@ -1,6 +1,6 @@
 ﻿# Assets
 
-* **Asset File:** `Running.png`, `Stop_Running.png`
+* **Asset File:** `Running.png`, `Stop_Running.png`, `player_punch1.png`
     * **Creator:** [Craftpix.net](https://craftpix.net)
     * **Terms of Use:** Free for personal and commercial use. The asset can be found on (https://craftpix.net/freebies/free-pixel-art-prototype-character-sprites) 
 
@@ -28,3 +28,5 @@ https://creativecommons.org/licenses/by/3.0/deed.en_US*
 * **Asset File:** `pickup-coin.wav`
     * **Creator:** Developer
     * **Terms of Use:** Created using https://www.bfxr.net
+
+

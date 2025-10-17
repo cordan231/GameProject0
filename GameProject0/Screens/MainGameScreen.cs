@@ -27,7 +27,9 @@ namespace GameProject0
         private Minotaur _minotaur;
         private bool _attackCooldown = false;
         private double _attackCooldownTimer = 0;
-        private bool _minotaurWasAlive = true;
+
+        private double _minotaurSpawnTimer;
+        private const double MINOTAUR_SPAWN_TIME = 10.0;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
@@ -38,13 +40,12 @@ namespace GameProject0
             _coins = new List<Coin>();
             _random = new Random();
             _score = 0;
-            _minotaur = new Minotaur();
+            _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME;
         }
 
         public void LoadContent()
         {
             _playerSprite.LoadContent(_content);
-            _minotaur.LoadContent(_content);
             _backgroundTexture = _content.Load<Texture2D>("platform-background");
             _spriteFont = _content.Load<SpriteFont>("vcr");
             _coinPickup = _content.Load<SoundEffect>("pickup-coin");
@@ -53,7 +54,6 @@ namespace GameProject0
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
             float groundY = viewport.Height * 0.83f;
             _playerSprite.Position = new Vector2(viewport.Width / 2 - _playerSprite.Width / 2, groundY - _playerSprite.Height);
-            _minotaur.Position = new Vector2(100, groundY - _minotaur.Height);
         }
 
         public void Update(GameTime gameTime, InputManager inputManager)
@@ -76,14 +76,16 @@ namespace GameProject0
             }
 
             _playerSprite.Update(gameTime);
-            if (!_minotaur.IsRemoved) _minotaur.Update(gameTime, viewport.Width);
+            _minotaur?.Update(gameTime, viewport.Width);
+
+            HandleMinotaurSpawning(gameTime);
 
             if (inputManager.Attack && !_playerSprite.IsAttacking)
             {
                 _playerSprite.Attack();
             }
 
-            if (_playerSprite.IsAttacking && !_attackCooldown && _minotaur.Health > 0)
+            if (_minotaur != null && !_minotaur.IsRemoved && _playerSprite.IsAttacking && !_attackCooldown)
             {
                 if (_playerSprite.AttackBox.CollidesWith(_minotaur.Bounds))
                 {
@@ -95,7 +97,7 @@ namespace GameProject0
                 }
             }
 
-            if (inputManager.Damage && _minotaur.Health > 0)
+            if (inputManager.Damage && _minotaur != null && !_minotaur.IsRemoved)
             {
                 _minotaur.TakeDamage();
                 Vector2 splatterPosition = _minotaur.Bounds.Center;
@@ -147,13 +149,40 @@ namespace GameProject0
                     _coins.RemoveAt(i);
                 }
             }
+        }
 
-            if (_minotaurWasAlive && _minotaur.IsRemoved)
+        private void HandleMinotaurSpawning(GameTime gameTime)
+        {
+            if (_minotaur == null || _minotaur.IsRemoved)
             {
-                Vector2 deathPosition = _minotaur.Bounds.Center;
-                Game1.Instance.BloodSplatters.Splatter(deathPosition);
-                _minotaurWasAlive = false;
+                _minotaurSpawnTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (_minotaurSpawnTimer <= 0)
+                {
+                    SpawnMinotaur();
+                    _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME;
+                }
             }
+        }
+
+        private void SpawnMinotaur()
+        {
+            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+            float groundY = viewport.Height * 0.83f;
+            _minotaur = new Minotaur();
+            _minotaur.LoadContent(_content);
+
+            int side = _random.Next(2); // 0 for left, 1 for right
+            if (side == 0)
+            {
+                _minotaur.Position = new Vector2(-_minotaur.Width, groundY - _minotaur.Height);
+                _minotaur.Direction = Direction.Right;
+            }
+            else
+            {
+                _minotaur.Position = new Vector2(viewport.Width, groundY - _minotaur.Height);
+                _minotaur.Direction = Direction.Left;
+            }
+            Game1.Instance.ShakeScreen(10f, 0.5f);
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
@@ -162,17 +191,16 @@ namespace GameProject0
 
             spriteBatch.Draw(_backgroundTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.White);
             _playerSprite.Draw(spriteBatch);
-            _minotaur.Draw(spriteBatch);
+            _minotaur?.Draw(spriteBatch);
             foreach (var coin in _coins)
             {
                 coin.Draw(spriteBatch);
             }
             spriteBatch.DrawString(_spriteFont, $"Score: {_score}", new Vector2(10, 10), Color.White);
-            if (!_minotaur.IsRemoved)
+            if (_minotaur != null && !_minotaur.IsRemoved)
             {
                 spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
             }
         }
     }
 }
-
