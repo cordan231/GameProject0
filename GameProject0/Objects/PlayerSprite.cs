@@ -9,7 +9,10 @@ namespace GameProject0
     {
         Idle,
         Running,
-        Attacking
+        Attacking,
+        Rolling,
+        Hurt,
+        Dead
     }
 
     public enum Direction
@@ -23,16 +26,22 @@ namespace GameProject0
         private Texture2D _idleTexture;
         private Texture2D _runningTexture;
         private Texture2D _attackTexture;
+        private Texture2D _rollTexture;
+        private Texture2D _hurtTexture;
+        private Texture2D _deathTexture;
+
 
         private Vector2 _position;
         public Direction _currentDirection;
         private CurrentState _currentState;
+        public CurrentState CurrentPlayerState => _currentState;
         private Texture2D _currentTexture;
         private int _currentFrame;
         private int _totalFrames;
         private double _frameTimer;
 
-        private double _attackTimer;
+        private double _stateTimer;
+        private double _hurtCooldown;
         public bool IsAttacking => _currentState == CurrentState.Attacking;
         public BoundingRectangle AttackBox { get; private set; }
 
@@ -41,6 +50,10 @@ namespace GameProject0
         private const int FRAME_WIDTH = 128;
         private const int FRAME_HEIGHT = 128;
         private const double FRAME_TIME_MS = 100;
+
+        public int Health { get; private set; } = 3;
+        public bool IsInvincible { get; private set; } = false;
+        public bool IsDead { get; private set; } = false;
 
         public BoundingRectangle Bounds { get; private set; }
 
@@ -74,6 +87,10 @@ namespace GameProject0
             _idleTexture = content.Load<Texture2D>("Stop_Running");
             _runningTexture = content.Load<Texture2D>("Running");
             _attackTexture = content.Load<Texture2D>("player_punch1");
+            _rollTexture = content.Load<Texture2D>("player_roll");
+            _hurtTexture = content.Load<Texture2D>("player_hurt");
+            _deathTexture = content.Load<Texture2D>("player_death");
+
             _currentState = CurrentState.Idle;
             _currentTexture = _idleTexture;
             _totalFrames = 5;
@@ -84,25 +101,50 @@ namespace GameProject0
 
         public void Update(GameTime gameTime)
         {
+            if (_hurtCooldown > 0)
+            {
+                _hurtCooldown -= gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
             _frameTimer += gameTime.ElapsedGameTime.TotalMilliseconds;
             if (_frameTimer > FRAME_TIME_MS)
             {
                 _currentFrame++;
                 if (_currentFrame >= _totalFrames)
                 {
-                    if (_currentState == CurrentState.Attacking)
+                    if (_currentState == CurrentState.Attacking || _currentState == CurrentState.Rolling || _currentState == CurrentState.Hurt)
                     {
                         SetState(CurrentState.Idle);
                     }
-                    _currentFrame = 0;
+                    if (_currentState == CurrentState.Dead)
+                    {
+                        IsDead = true;
+                        _currentFrame = _totalFrames - 1;
+                    }
+                    else
+                    {
+                        _currentFrame = 0;
+                    }
                 }
                 _frameTimer = 0;
             }
 
-            if (_currentState == CurrentState.Attacking)
+            if (_currentState == CurrentState.Rolling)
             {
-                _attackTimer -= gameTime.ElapsedGameTime.TotalSeconds;
-                if (_attackTimer <= 0)
+                IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
+                float rollSpeed = 200f;
+                float moveDirection = (_currentDirection == Direction.Right) ? 1 : -1;
+                _position.X += moveDirection * rollSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+            else
+            {
+                IsInvincible = false;
+            }
+
+            if (_stateTimer > 0)
+            {
+                _stateTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (_stateTimer <= 0)
                 {
                     SetState(CurrentState.Idle);
                 }
@@ -112,12 +154,40 @@ namespace GameProject0
 
         public void Attack()
         {
-            if (_currentState != CurrentState.Attacking)
+            if (_currentState == CurrentState.Idle || _currentState == CurrentState.Running)
             {
                 SetState(CurrentState.Attacking);
-                _attackTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
             }
         }
+
+        public void Roll()
+        {
+            if (_currentState == CurrentState.Idle || _currentState == CurrentState.Running)
+            {
+                SetState(CurrentState.Rolling);
+            }
+        }
+
+        public void TakeDamage(Direction hitDirection)
+        {
+            if (IsInvincible || _currentState == CurrentState.Hurt || _currentState == CurrentState.Dead || _hurtCooldown > 0) return;
+
+            Health--;
+            _hurtCooldown = 1.0; // 1 second of invincibility after getting hit
+            Game1.Instance.BloodSplatters.Splatter(Bounds.Center);
+
+            if (Health <= 0)
+            {
+                SetState(CurrentState.Dead);
+            }
+            else
+            {
+                SetState(CurrentState.Hurt);
+                float knockback = 150f;
+                _position.X += (hitDirection == Direction.Right) ? knockback : -knockback;
+            }
+        }
+
 
         private void UpdateAttackBox()
         {
@@ -139,11 +209,12 @@ namespace GameProject0
 
         public void SetState(CurrentState state)
         {
-            if (_currentState == state) return;
+            if (_currentState == state || _currentState == CurrentState.Dead) return;
 
             _currentState = state;
             _currentFrame = 0;
             _frameTimer = 0;
+            _stateTimer = 0;
 
             switch (state)
             {
@@ -157,14 +228,29 @@ namespace GameProject0
                     break;
                 case CurrentState.Attacking:
                     _currentTexture = _attackTexture;
-                    _totalFrames = 4; // Assuming 4 frames for attack
+                    _totalFrames = 4;
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
+                    break;
+                case CurrentState.Rolling:
+                    _currentTexture = _rollTexture;
+                    _totalFrames = 9;
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
+                    break;
+                case CurrentState.Hurt:
+                    _currentTexture = _hurtTexture;
+                    _totalFrames = 3;
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0 * 2;
+                    break;
+                case CurrentState.Dead:
+                    _currentTexture = _deathTexture;
+                    _totalFrames = 5;
                     break;
             }
         }
 
         public void SetDirection(Direction direction)
         {
-            if (_currentState != CurrentState.Attacking)
+            if (_currentState != CurrentState.Attacking && _currentState != CurrentState.Rolling && _currentState != CurrentState.Hurt)
             {
                 _currentDirection = direction;
             }
@@ -172,6 +258,8 @@ namespace GameProject0
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            if (IsDead && _currentFrame >= _totalFrames - 1) return;
+
             var effects = (_currentDirection == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             Rectangle rect = new Rectangle(_currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
 

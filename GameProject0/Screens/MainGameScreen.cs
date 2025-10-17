@@ -58,6 +58,12 @@ namespace GameProject0
 
         public void Update(GameTime gameTime, InputManager inputManager)
         {
+            if (_playerSprite.IsDead)
+            {
+                _screenManager.LoadScreen(new TitleScreen());
+                return;
+            }
+
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
             if (inputManager.Exit)
@@ -80,34 +86,18 @@ namespace GameProject0
 
             HandleMinotaurSpawning(gameTime);
 
-            if (inputManager.Attack && !_playerSprite.IsAttacking)
+            // Only process new actions if the player is in a state that allows it
+            if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
             {
-                _playerSprite.Attack();
-            }
-
-            if (_minotaur != null && !_minotaur.IsRemoved && _playerSprite.IsAttacking && !_attackCooldown)
-            {
-                if (_playerSprite.AttackBox.CollidesWith(_minotaur.Bounds))
+                if (inputManager.Roll)
                 {
-                    _attackCooldown = true;
-                    _attackCooldownTimer = 0.5;
-                    _minotaur.TakeDamage();
-                    Vector2 splatterPosition = _minotaur.Bounds.Center;
-                    Game1.Instance.BloodSplatters.Splatter(splatterPosition);
+                    _playerSprite.Roll();
                 }
-            }
-
-            if (inputManager.Damage && _minotaur != null && !_minotaur.IsRemoved)
-            {
-                _minotaur.TakeDamage();
-                Vector2 splatterPosition = _minotaur.Bounds.Center;
-                Game1.Instance.BloodSplatters.Splatter(splatterPosition);
-            }
-
-
-            if (!_playerSprite.IsAttacking)
-            {
-                if (inputManager.Direction.X != 0)
+                else if (inputManager.Attack)
+                {
+                    _playerSprite.Attack();
+                }
+                else if (inputManager.Direction.X != 0)
                 {
                     _playerSprite.SetState(CurrentState.Running);
                     _playerSprite.SetDirection(inputManager.Direction.X > 0 ? Direction.Right : Direction.Left);
@@ -116,10 +106,31 @@ namespace GameProject0
                 {
                     _playerSprite.SetState(CurrentState.Idle);
                 }
+            }
 
 
+            if (_minotaur != null && !_minotaur.IsRemoved)
+            {
+                // Player attacks minotaur
+                if (_playerSprite.IsAttacking && !_attackCooldown && _playerSprite.AttackBox.CollidesWith(_minotaur.Bounds))
+                {
+                    _attackCooldown = true;
+                    _attackCooldownTimer = 0.5;
+                    _minotaur.TakeDamage();
+                    Game1.Instance.BloodSplatters.Splatter(_minotaur.Bounds.Center);
+                }
+
+                // Minotaur attacks player
+                if (_minotaur.IsAttackHitboxActive && _minotaur.AttackBox.CollidesWith(_playerSprite.Bounds))
+                {
+                    _playerSprite.TakeDamage(_minotaur.Direction);
+                }
+            }
+
+            // Player movement is now conditional on state
+            if (_playerSprite.CurrentPlayerState == CurrentState.Running || _playerSprite.CurrentPlayerState == CurrentState.Idle)
+            {
                 Vector2 newPosition = _playerSprite.Position + inputManager.Direction * 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-
                 newPosition.X = Math.Clamp(newPosition.X, 0, viewport.Width - _playerSprite.Width);
                 _playerSprite.Position = newPosition;
             }
@@ -197,10 +208,19 @@ namespace GameProject0
                 coin.Draw(spriteBatch);
             }
             spriteBatch.DrawString(_spriteFont, $"Score: {_score}", new Vector2(10, 10), Color.White);
+            spriteBatch.DrawString(_spriteFont, $"Player HP: {_playerSprite.Health}", new Vector2(10, 50), Color.White);
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
                 spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
             }
+
+            string instructions = "E TO ATTACK   SPACE TO DODGE";
+            Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
+            Vector2 instructionsPosition = new Vector2(
+                viewport.Width - instructionsSize.X - 10,
+                viewport.Height - instructionsSize.Y - 10
+            );
+            spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
         }
     }
 }

@@ -11,7 +11,8 @@ namespace GameProject0.Enemies
         Idle,
         Walk,
         Hurt,
-        Dead
+        Dead,
+        Attack
     }
 
     public class Minotaur
@@ -20,6 +21,7 @@ namespace GameProject0.Enemies
         private Texture2D _walkTexture;
         private Texture2D _hurtTexture;
         private Texture2D _deadTexture;
+        private Texture2D _attackTexture;
         private Texture2D _currentTexture;
 
         private Vector2 _position;
@@ -37,15 +39,19 @@ namespace GameProject0.Enemies
 
         public int Health { get; set; } = 3;
         public bool IsRemoved { get; private set; } = false;
+        public bool IsAttackHitboxActive { get; private set; } = false;
 
         public float Scale { get; set; } = 2.0f;
 
-        private const int FRAME_WIDTH = 128;
-        private const int FRAME_HEIGHT = 128;
-        private const double ANIMATION_FRAME_TIME = 0.1;
+        private int FRAME_WIDTH = 128;
+        private int FRAME_HEIGHT = 128;
+        private double _animationFrameTime = 0.1;
         private const double IDLE_DURATION = 1.5;
 
+        private double _attackTimer = 4.0;
+
         public BoundingRectangle Bounds { get; private set; }
+        public BoundingRectangle AttackBox { get; private set; }
 
         public Vector2 Position
         {
@@ -54,16 +60,14 @@ namespace GameProject0.Enemies
             {
                 _position = value;
                 UpdateBounds();
+                UpdateAttackBox();
             }
         }
 
         public Direction Direction
         {
             get => _direction;
-            set
-            {
-                _direction = value;
-            }
+            set => _direction = value;
         }
 
         public float Width => FRAME_WIDTH * Scale;
@@ -75,9 +79,9 @@ namespace GameProject0.Enemies
             _hurtTexture = content.Load<Texture2D>("minotaur_hurt");
             _deadTexture = content.Load<Texture2D>("minotaur_dead");
             _idleTexture = content.Load<Texture2D>("minotaur_idle");
+            _attackTexture = content.Load<Texture2D>("minotaur_attack");
 
             SetState(MinotaurState.Walk);
-            _direction = Direction.Left;
         }
 
         public void Update(GameTime gameTime, int screenWidth)
@@ -95,7 +99,7 @@ namespace GameProject0.Enemies
                 }
             }
 
-            if (_currentState == MinotaurState.Hurt || _currentState == MinotaurState.Idle)
+            if (_currentState != MinotaurState.Walk && _currentState != MinotaurState.Attack && _currentState != MinotaurState.Dead)
             {
                 _stateTimer -= gameTime.ElapsedGameTime.TotalSeconds;
                 if (_stateTimer <= 0)
@@ -106,6 +110,13 @@ namespace GameProject0.Enemies
 
             if (_currentState == MinotaurState.Walk)
             {
+                _attackTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (_attackTimer <= 0)
+                {
+                    SetState(MinotaurState.Attack);
+                    _attackTimer = 4.0;
+                }
+
                 float speed = 100f * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (_direction == Direction.Left)
                 {
@@ -128,7 +139,7 @@ namespace GameProject0.Enemies
             }
 
             _animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
-            if (_animationTimer > ANIMATION_FRAME_TIME)
+            if (_animationTimer > _animationFrameTime)
             {
                 _currentFrame++;
                 if (_currentFrame >= _totalFrames)
@@ -138,13 +149,19 @@ namespace GameProject0.Enemies
                         IsRemoved = true;
                         _currentFrame = _totalFrames - 1;
                     }
+                    else if (_currentState == MinotaurState.Attack)
+                    {
+                        SetState(MinotaurState.Walk);
+                    }
                     else
                     {
                         _currentFrame = 0;
                     }
                 }
-                _animationTimer -= ANIMATION_FRAME_TIME;
+                _animationTimer -= _animationFrameTime;
             }
+
+            IsAttackHitboxActive = (_currentState == MinotaurState.Attack && _currentFrame >= 3);
 
             Position = _position;
         }
@@ -191,20 +208,29 @@ namespace GameProject0.Enemies
                     _currentTexture = _idleTexture;
                     _totalFrames = 10;
                     _stateTimer = IDLE_DURATION;
+                    _animationFrameTime = 0.1;
                     break;
                 case MinotaurState.Walk:
                     _currentTexture = _walkTexture;
                     _totalFrames = 12;
                     _color = Color.White;
+                    _animationFrameTime = 0.1;
                     break;
                 case MinotaurState.Hurt:
                     _currentTexture = _hurtTexture;
                     _totalFrames = 3;
-                    _stateTimer = ANIMATION_FRAME_TIME * _totalFrames * 2;
+                    _stateTimer = _animationFrameTime * _totalFrames * 2;
+                    _animationFrameTime = 0.1;
                     break;
                 case MinotaurState.Dead:
                     _currentTexture = _deadTexture;
                     _totalFrames = 5;
+                    _animationFrameTime = 0.1;
+                    break;
+                case MinotaurState.Attack:
+                    _currentTexture = _attackTexture;
+                    _totalFrames = 5;
+                    _animationFrameTime = 0.2;
                     break;
             }
         }
@@ -221,6 +247,23 @@ namespace GameProject0.Enemies
                 boxHeight
             );
         }
+
+        private void UpdateAttackBox()
+        {
+            float attackWidth = 100 * Scale;
+            float attackHeight = 50 * Scale;
+            float yOffset = 50 * Scale;
+
+            if (Direction == Direction.Right)
+            {
+                float xOffset = 60 * Scale;
+                AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+            }
+            else
+            {
+                float xOffset = (FRAME_WIDTH * Scale) - (60 * Scale) - attackWidth;
+                AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+            }
+        }
     }
 }
-
