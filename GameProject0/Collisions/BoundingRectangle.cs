@@ -19,6 +19,8 @@ namespace GameProject0.Collisions
         public float Top => Y;
         public float Bottom => Y + Height;
 
+        public Vector2 Center => new Vector2(X + Width / 2, Y + Height / 2);
+
         public BoundingRectangle(float x, float y, float width, float height)
         {
             X = x;

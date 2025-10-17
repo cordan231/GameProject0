@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
+using GameProject0.Particles;
 
 namespace GameProject0
 {
@@ -13,8 +14,12 @@ namespace GameProject0
         private InputManager _inputManager;
         private Song _backgroundMusic;
 
+        public static Game1 Instance { get; private set; }
+        public BloodSplatterParticleSystem BloodSplatters { get; private set; }
+
         public Game1()
         {
+            Instance = this;
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -25,6 +30,10 @@ namespace GameProject0
         protected override void Initialize()
         {
             _screenManager.Initialize(Content, _graphics);
+
+            BloodSplatters = new BloodSplatterParticleSystem(this, 1000);
+            Components.Add(BloodSplatters);
+
             base.Initialize();
         }
 
@@ -64,3 +73,4 @@ namespace GameProject0
         }
     }
 }
+

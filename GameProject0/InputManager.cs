@@ -11,6 +11,8 @@ namespace GameProject0
         public Vector2 Direction { get; private set; }
         public bool Exit { get; private set; } = false;
         public bool Select { get; private set; } = false;
+        public bool Damage { get; private set; } = false; // For debugging
+        public bool Attack { get; private set; } = false;
 
         public void Update(GameTime gameTime)
         {
@@ -19,6 +21,9 @@ namespace GameProject0
 
             Direction = Vector2.Zero;
             Select = false;
+            Attack = false;
+            Damage = false;
+
 
             if (_currentKeyboardState.IsKeyDown(Keys.Left) || _currentKeyboardState.IsKeyDown(Keys.A))
             {
@@ -42,6 +47,17 @@ namespace GameProject0
             {
                 Exit = false;
             }
+
+            if (_currentKeyboardState.IsKeyDown(Keys.E) && _priorKeyboardState.IsKeyUp(Keys.E))
+            {
+                Attack = true;
+            }
+
+            if (_currentKeyboardState.IsKeyDown(Keys.Q) && _priorKeyboardState.IsKeyUp(Keys.Q))
+            {
+                Damage = true;
+            }
         }
     }
 }
+

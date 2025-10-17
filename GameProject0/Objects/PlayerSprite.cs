@@ -8,7 +8,8 @@ namespace GameProject0
     public enum CurrentState
     {
         Idle,
-        Running
+        Running,
+        Attacking
     }
 
     public enum Direction
@@ -21,6 +22,8 @@ namespace GameProject0
     {
         private Texture2D _idleTexture;
         private Texture2D _runningTexture;
+        private Texture2D _attackTexture;
+
         private Vector2 _position;
         public Direction _currentDirection;
         private CurrentState _currentState;
@@ -28,6 +31,10 @@ namespace GameProject0
         private int _currentFrame;
         private int _totalFrames;
         private double _frameTimer;
+
+        private double _attackTimer;
+        public bool IsAttacking => _currentState == CurrentState.Attacking;
+        public BoundingRectangle AttackBox { get; private set; }
 
         public float Scale { get; set; } = 2.0f;
 
@@ -55,6 +62,7 @@ namespace GameProject0
                     boxWidth,
                     boxHeight
                 );
+                UpdateAttackBox();
             }
         }
 
@@ -65,6 +73,7 @@ namespace GameProject0
         {
             _idleTexture = content.Load<Texture2D>("Stop_Running");
             _runningTexture = content.Load<Texture2D>("Running");
+            _attackTexture = content.Load<Texture2D>("Attack");
             _currentState = CurrentState.Idle;
             _currentTexture = _idleTexture;
             _totalFrames = 5;
@@ -78,8 +87,53 @@ namespace GameProject0
             _frameTimer += gameTime.ElapsedGameTime.TotalMilliseconds;
             if (_frameTimer > FRAME_TIME_MS)
             {
-                _currentFrame = (_currentFrame + 1) % _totalFrames;
+                _currentFrame++;
+                if (_currentFrame >= _totalFrames)
+                {
+                    if (_currentState == CurrentState.Attacking)
+                    {
+                        SetState(CurrentState.Idle);
+                    }
+                    _currentFrame = 0;
+                }
                 _frameTimer = 0;
+            }
+
+            if (_currentState == CurrentState.Attacking)
+            {
+                _attackTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (_attackTimer <= 0)
+                {
+                    SetState(CurrentState.Idle);
+                }
+            }
+            UpdateAttackBox();
+        }
+
+        public void Attack()
+        {
+            if (_currentState != CurrentState.Attacking)
+            {
+                SetState(CurrentState.Attacking);
+                _attackTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
+            }
+        }
+
+        private void UpdateAttackBox()
+        {
+            float attackWidth = 60 * Scale;
+            float attackHeight = 30 * Scale;
+            float yOffset = 40 * Scale;
+
+            if (_currentDirection == Direction.Right)
+            {
+                float xOffset = 50 * Scale;
+                AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+            }
+            else
+            {
+                float xOffset = (FRAME_WIDTH * Scale) - (50 * Scale) - attackWidth;
+                AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
             }
         }
 
@@ -101,12 +155,19 @@ namespace GameProject0
                     _currentTexture = _runningTexture;
                     _totalFrames = 12;
                     break;
+                case CurrentState.Attacking:
+                    _currentTexture = _attackTexture;
+                    _totalFrames = 4; // Assuming 4 frames for attack
+                    break;
             }
         }
 
         public void SetDirection(Direction direction)
         {
-            _currentDirection = direction;
+            if (_currentState != CurrentState.Attacking)
+            {
+                _currentDirection = direction;
+            }
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -118,3 +179,4 @@ namespace GameProject0
         }
     }
 }
+
