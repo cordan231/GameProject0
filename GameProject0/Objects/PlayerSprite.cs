@@ -73,7 +73,7 @@ namespace GameProject0
         {
             _idleTexture = content.Load<Texture2D>("Stop_Running");
             _runningTexture = content.Load<Texture2D>("Running");
-            _attackTexture = content.Load<Texture2D>("Attack");
+            _attackTexture = content.Load<Texture2D>("player_punch1");
             _currentState = CurrentState.Idle;
             _currentTexture = _idleTexture;
             _totalFrames = 5;

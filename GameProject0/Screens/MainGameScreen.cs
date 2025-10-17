@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using GameProject0.Enemies;
 using GameProject0.Particles;
+using GameProject0.Collisions;
 
 namespace GameProject0
 {
@@ -57,6 +58,7 @@ namespace GameProject0
 
         public void Update(GameTime gameTime, InputManager inputManager)
         {
+            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
             if (inputManager.Exit)
             {
@@ -74,7 +76,7 @@ namespace GameProject0
             }
 
             _playerSprite.Update(gameTime);
-            if (!_minotaur.IsRemoved) _minotaur.Update(gameTime);
+            if (!_minotaur.IsRemoved) _minotaur.Update(gameTime, viewport.Width);
 
             if (inputManager.Attack && !_playerSprite.IsAttacking)
             {
@@ -113,7 +115,7 @@ namespace GameProject0
                     _playerSprite.SetState(CurrentState.Idle);
                 }
 
-                var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+
                 Vector2 newPosition = _playerSprite.Position + inputManager.Direction * 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
                 newPosition.X = Math.Clamp(newPosition.X, 0, viewport.Width - _playerSprite.Width);

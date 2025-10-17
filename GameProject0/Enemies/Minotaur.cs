@@ -35,13 +35,13 @@ namespace GameProject0.Enemies
         private double _hurtFlashTimer;
         private bool _isFlashingWhite = false;
 
-        public int Health { get; set; } = 2;
+        public int Health { get; set; } = 3;
         public bool IsRemoved { get; private set; } = false;
 
         public float Scale { get; set; } = 2.0f;
 
-        private const int FRAME_WIDTH = 96;
-        private const int FRAME_HEIGHT = 96;
+        private const int FRAME_WIDTH = 128;
+        private const int FRAME_HEIGHT = 128;
         private const double ANIMATION_FRAME_TIME = 0.1;
         private const double IDLE_DURATION = 1.5;
 
@@ -62,16 +62,16 @@ namespace GameProject0.Enemies
 
         public void LoadContent(ContentManager content)
         {
-            _idleTexture = content.Load<Texture2D>("minotaur_idle");
             _walkTexture = content.Load<Texture2D>("minotaur_walk");
             _hurtTexture = content.Load<Texture2D>("minotaur_hurt");
             _deadTexture = content.Load<Texture2D>("minotaur_dead");
+            _idleTexture = content.Load<Texture2D>("minotaur_idle");
 
             SetState(MinotaurState.Walk);
             _direction = Direction.Left;
         }
 
-        public void Update(GameTime gameTime)
+        public void Update(GameTime gameTime, int screenWidth)
         {
             if (IsRemoved) return;
 
@@ -105,17 +105,15 @@ namespace GameProject0.Enemies
                     {
                         _position.X = 0;
                         _direction = Direction.Right;
-                        SetState(MinotaurState.Idle);
                     }
                 }
                 else
                 {
                     _position.X += speed;
-                    if (_position.X > 800 - Width)
+                    if (_position.X > screenWidth - Width)
                     {
-                        _position.X = 800 - Width;
+                        _position.X = screenWidth - Width;
                         _direction = Direction.Left;
-                        SetState(MinotaurState.Idle);
                     }
                 }
             }
@@ -146,7 +144,7 @@ namespace GameProject0.Enemies
         {
             if (IsRemoved) return;
 
-            var effects = (_direction == Direction.Right) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+            var effects = (_direction == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             var sourceRect = new Rectangle(_currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
             spriteBatch.Draw(_currentTexture, Position, sourceRect, _color, 0f, Vector2.Zero, Scale, effects, 0f);
         }
@@ -182,22 +180,22 @@ namespace GameProject0.Enemies
             {
                 case MinotaurState.Idle:
                     _currentTexture = _idleTexture;
-                    _totalFrames = 6;
+                    _totalFrames = 10;
                     _stateTimer = IDLE_DURATION;
                     break;
                 case MinotaurState.Walk:
                     _currentTexture = _walkTexture;
-                    _totalFrames = 8;
+                    _totalFrames = 12;
                     _color = Color.White;
                     break;
                 case MinotaurState.Hurt:
                     _currentTexture = _hurtTexture;
-                    _totalFrames = 2;
+                    _totalFrames = 3;
                     _stateTimer = ANIMATION_FRAME_TIME * _totalFrames * 2;
                     break;
                 case MinotaurState.Dead:
                     _currentTexture = _deadTexture;
-                    _totalFrames = 6;
+                    _totalFrames = 5;
                     break;
             }
         }
