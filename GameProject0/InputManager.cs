@@ -15,6 +15,9 @@ namespace GameProject0
         public bool Attack { get; private set; } = false;
         public bool Roll { get; private set; } = false;
 
+        public bool Save { get; private set; } = false;
+        public bool Load { get; private set; } = false;
+
         public void Update(GameTime gameTime)
         {
             _priorKeyboardState = _currentKeyboardState;
@@ -25,7 +28,8 @@ namespace GameProject0
             Attack = false;
             Damage = false;
             Roll = false;
-
+            Save = false;
+            Load = false;
 
             if (_currentKeyboardState.IsKeyDown(Keys.Left) || _currentKeyboardState.IsKeyDown(Keys.A))
             {
@@ -63,6 +67,15 @@ namespace GameProject0
             if (_currentKeyboardState.IsKeyDown(Keys.Q) && _priorKeyboardState.IsKeyUp(Keys.Q))
             {
                 Damage = true;
+            }
+            if (_currentKeyboardState.IsKeyDown(Keys.F5) && _priorKeyboardState.IsKeyUp(Keys.F5))
+            {
+                Save = true;
+            }
+
+            if (_currentKeyboardState.IsKeyDown(Keys.F9) && _priorKeyboardState.IsKeyUp(Keys.F9))
+            {
+                Load = true;
             }
         }
     }

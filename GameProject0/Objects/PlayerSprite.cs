@@ -40,6 +40,9 @@ namespace GameProject0
         private int _totalFrames;
         private double _frameTimer;
 
+        private Vector2 _knockbackVelocity;
+        private const float KNOCKBACK_SPEED = 250f;
+
         private double _stateTimer;
         private double _hurtCooldown;
         public bool IsAttacking => _currentState == CurrentState.Attacking;
@@ -54,6 +57,11 @@ namespace GameProject0
         public int Health { get; private set; } = 3;
         public bool IsInvincible { get; private set; } = false;
         public bool IsDead { get; private set; } = false;
+
+        public void SetHealth(int health)
+        {
+            Health = health;
+        }
 
         public BoundingRectangle Bounds { get; private set; }
 
@@ -128,6 +136,11 @@ namespace GameProject0
                 }
                 _frameTimer = 0;
             }
+            // Apply knockback slide if in Hurt state
+            if (_currentState == CurrentState.Hurt)
+            {
+                _position += _knockbackVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
 
             if (_currentState == CurrentState.Rolling)
             {
@@ -183,8 +196,8 @@ namespace GameProject0
             else
             {
                 SetState(CurrentState.Hurt);
-                float knockback = 150f;
-                _position.X += (hitDirection == Direction.Right) ? knockback : -knockback;
+                float knockbackDirection = (hitDirection == Direction.Right) ? 1 : -1;
+                _knockbackVelocity = new Vector2(KNOCKBACK_SPEED * knockbackDirection, 0);
             }
         }
 
@@ -219,10 +232,12 @@ namespace GameProject0
             switch (state)
             {
                 case CurrentState.Idle:
+                    _knockbackVelocity = Vector2.Zero;
                     _currentTexture = _idleTexture;
                     _totalFrames = 5;
                     break;
                 case CurrentState.Running:
+                    _knockbackVelocity = Vector2.Zero;
                     _currentTexture = _runningTexture;
                     _totalFrames = 12;
                     break;

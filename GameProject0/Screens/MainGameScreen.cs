@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using GameProject0.Enemies;
 using GameProject0.Particles;
 using GameProject0.Collisions;
+using System.Linq;
 
 namespace GameProject0
 {
@@ -14,7 +15,7 @@ namespace GameProject0
     {
         private ScreenManager _screenManager;
         private PlayerSprite _playerSprite;
-        private Texture2D _backgroundTexture;
+        private Background _background; // Added
         private List<Coin> _coins;
         private Random _random;
         private double _coinSpawnTimer;
@@ -37,6 +38,7 @@ namespace GameProject0
             _content = content;
             _graphicsDeviceManager = graphicsDeviceManager;
             _playerSprite = new PlayerSprite();
+            _background = new Background(); // Added
             _coins = new List<Coin>();
             _random = new Random();
             _score = 0;
@@ -45,15 +47,20 @@ namespace GameProject0
 
         public void LoadContent()
         {
+            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+            _background.LoadContent(_content, viewport); // Added
+
             _playerSprite.LoadContent(_content);
-            _backgroundTexture = _content.Load<Texture2D>("platform-background");
             _spriteFont = _content.Load<SpriteFont>("vcr");
             _coinPickup = _content.Load<SoundEffect>("pickup-coin");
 
             _playerSprite.Scale = 1.5f;
-            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
-            float groundY = viewport.Height * 0.83f;
-            _playerSprite.Position = new Vector2(viewport.Width / 2 - _playerSprite.Width / 2, groundY - _playerSprite.Height);
+
+            // Use Scenery.GroundY to position player
+            _playerSprite.Position = new Vector2(
+                viewport.Width / 2 - _playerSprite.Width / 2,
+                _background.GroundY - _playerSprite.Height
+            );
         }
 
         public void Update(GameTime gameTime, InputManager inputManager)
@@ -80,9 +87,25 @@ namespace GameProject0
                     _attackCooldown = false;
                 }
             }
+            if (inputManager.Save)
+            {
+                SaveGame();
+                // Optionally add feedback here, e.g., a "Game Saved!" message
+            }
+
+            if (inputManager.Load)
+            {
+                LoadGame();
+                // Optionally add feedback here
+            }
 
             _playerSprite.Update(gameTime);
-            _minotaur?.Update(gameTime, viewport.Width);
+            // Update Minotaur position based on ground
+            if (_minotaur != null)
+            {
+                _minotaur.Update(gameTime, viewport.Width);
+                _minotaur.Position = new Vector2(_minotaur.Position.X, _background.GroundY - _minotaur.Height);
+            }
 
             HandleMinotaurSpawning(gameTime);
 
@@ -132,6 +155,8 @@ namespace GameProject0
             {
                 Vector2 newPosition = _playerSprite.Position + inputManager.Direction * 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 newPosition.X = Math.Clamp(newPosition.X, 0, viewport.Width - _playerSprite.Width);
+                // Keep Y position locked to the ground
+                newPosition.Y = _background.GroundY - _playerSprite.Height;
                 _playerSprite.Position = newPosition;
             }
 
@@ -178,19 +203,18 @@ namespace GameProject0
         private void SpawnMinotaur()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
-            float groundY = viewport.Height * 0.83f;
             _minotaur = new Minotaur();
             _minotaur.LoadContent(_content);
 
             int side = _random.Next(2); // 0 for left, 1 for right
             if (side == 0)
             {
-                _minotaur.Position = new Vector2(-_minotaur.Width, groundY - _minotaur.Height);
+                _minotaur.Position = new Vector2(-_minotaur.Width, _background.GroundY - _minotaur.Height);
                 _minotaur.Direction = Direction.Right;
             }
             else
             {
-                _minotaur.Position = new Vector2(viewport.Width, groundY - _minotaur.Height);
+                _minotaur.Position = new Vector2(viewport.Width, _background.GroundY - _minotaur.Height);
                 _minotaur.Direction = Direction.Left;
             }
             Game1.Instance.ShakeScreen(10f, 0.5f);
@@ -200,7 +224,8 @@ namespace GameProject0
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
-            spriteBatch.Draw(_backgroundTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.White);
+            _background.Draw(spriteBatch, viewport); // Added
+
             _playerSprite.Draw(spriteBatch);
             _minotaur?.Draw(spriteBatch);
             foreach (var coin in _coins)
@@ -221,6 +246,70 @@ namespace GameProject0
                 viewport.Height - instructionsSize.Y - 10
             );
             spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
+        }
+        private void SaveGame()
+        {
+            var state = new GameState
+            {
+                Score = _score,
+                Player = new PlayerData
+                {
+                    Position = _playerSprite.Position,
+                    Health = _playerSprite.Health
+                },
+                CoinPositions = _coins.Select(c => c.Position).ToList(),
+                Minotaur = new EnemyData
+                {
+                    IsRemoved = _minotaur == null || _minotaur.IsRemoved,
+                    Position = _minotaur?.Position ?? Vector2.Zero,
+                    Health = _minotaur?.Health ?? 0,
+                    Direction = _minotaur?.Direction ?? Direction.Right
+                }
+            };
+
+            SaveManager.Save(state);
+            Console.WriteLine("Game Saved!");
+        }
+
+        private void LoadGame()
+        {
+            var state = SaveManager.Load();
+            if (state == null)
+            {
+                Console.WriteLine("Load failed or no save found.");
+                return;
+            }
+
+            // Restore game state
+            _score = state.Score;
+            _playerSprite.Position = state.Player.Position;
+            _playerSprite.SetHealth(state.Player.Health);
+
+            // Restore coins
+            _coins.Clear();
+            foreach (var pos in state.CoinPositions)
+            {
+                var coin = new Coin();
+                coin.LoadContent(_content);
+                coin.Position = pos;
+                _coins.Add(coin);
+            }
+
+            // Restore minotaur
+            if (state.Minotaur != null && !state.Minotaur.IsRemoved)
+            {
+                _minotaur = new Minotaur();
+                _minotaur.LoadContent(_content);
+                _minotaur.Position = state.Minotaur.Position;
+                _minotaur.Health = state.Minotaur.Health;
+                _minotaur.Direction = state.Minotaur.Direction;
+            }
+            else
+            {
+                _minotaur = null;
+            }
+
+            Console.WriteLine("Game Loaded!");
         }
     }
 }

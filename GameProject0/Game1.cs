@@ -79,7 +79,7 @@ namespace GameProject0
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.PaleTurquoise);
 
             Matrix cameraTransform = Matrix.Identity;
             if (_screenShakeTimer > 0)
@@ -89,7 +89,10 @@ namespace GameProject0
                 cameraTransform = Matrix.CreateTranslation(x, y, 0);
             }
 
-            _spriteBatch.Begin(transformMatrix: cameraTransform);
+            _spriteBatch.Begin(
+                transformMatrix: cameraTransform,
+                samplerState: SamplerState.PointClamp // Added for crisp pixel art
+            );
             _screenManager.Draw(gameTime, _spriteBatch);
             _spriteBatch.End();
 
