@@ -99,7 +99,7 @@ namespace GameProject0
             if (inputManager.Load)
             {
                 LoadGame();
-
+                return;
             }
 
             _playerSprite.Update(gameTime);
@@ -242,13 +242,13 @@ namespace GameProject0
                 spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
             }
 
-            string instructions = "E TO ATTACK   SPACE TO DODGE";
-            Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
-            Vector2 instructionsPosition = new Vector2(
-                viewport.Width - instructionsSize.X - 10,
-                viewport.Height - instructionsSize.Y - 10
-            );
-            spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
+            //string instructions = "E TO ATTACK   SPACE TO DODGE";
+            //Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
+            //Vector2 instructionsPosition = new Vector2(
+            //    viewport.Width - instructionsSize.X - 10,
+            //    viewport.Height - instructionsSize.Y - 10
+            //);
+            //spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
         }
         private void SaveGame()
         {
@@ -258,15 +258,17 @@ namespace GameProject0
                 Player = new PlayerData
                 {
                     Position = _playerSprite.Position,
-                    Health = _playerSprite.Health
+                    Health = _playerSprite.Health,
+                    State = _playerSprite.CurrentPlayerState
                 },
                 CoinPositions = _coins.Select(c => c.Position).ToList(),
-                Minotaur = new EnemyData
+                Minotaur = _minotaur == null ? new EnemyData { IsRemoved = true } : new EnemyData
                 {
-                    IsRemoved = _minotaur == null || _minotaur.IsRemoved,
-                    Position = _minotaur?.Position ?? Vector2.Zero,
-                    Health = _minotaur?.Health ?? 0,
-                    Direction = _minotaur?.Direction ?? Direction.Right
+                    IsRemoved = _minotaur.IsRemoved,
+                    Position = _minotaur.Position,
+                    Health = _minotaur.Health,
+                    Direction = _minotaur.Direction,
+                    State = _minotaur.CurrentState
                 }
             };
 
@@ -287,6 +289,7 @@ namespace GameProject0
             _score = state.Score;
             _playerSprite.Position = state.Player.Position;
             _playerSprite.SetHealth(state.Player.Health);
+            _playerSprite.SetState(state.Player.State);
 
             // Restore coins
             _coins.Clear();
@@ -306,6 +309,7 @@ namespace GameProject0
                 _minotaur.Position = state.Minotaur.Position;
                 _minotaur.Health = state.Minotaur.Health;
                 _minotaur.Direction = state.Minotaur.Direction;
+                _minotaur.SetState(state.Minotaur.State);
             }
             else
             {

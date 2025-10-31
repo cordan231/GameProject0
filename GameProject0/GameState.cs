@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
+using GameProject0.Enemies;
 
 namespace GameProject0
 {
@@ -11,6 +12,7 @@ namespace GameProject0
     {
         public Vector2 Position { get; set; }
         public int Health { get; set; }
+        public CurrentState State { get; set; }
     }
 
     /// <summary>
@@ -22,6 +24,7 @@ namespace GameProject0
         public int Health { get; set; }
         public Direction Direction { get; set; }
         public bool IsRemoved { get; set; }
+        public MinotaurState State { get; set; }
     }
 
     /// <summary>

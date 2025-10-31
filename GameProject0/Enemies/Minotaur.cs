@@ -53,6 +53,8 @@ namespace GameProject0.Enemies
         public BoundingRectangle Bounds { get; private set; }
         public BoundingRectangle AttackBox { get; private set; }
 
+        public MinotaurState CurrentState => _currentState;
+
         public Vector2 Position
         {
             get => _position;
@@ -193,7 +195,7 @@ namespace GameProject0.Enemies
             }
         }
 
-        private void SetState(MinotaurState state)
+        public void SetState(MinotaurState state)
         {
             if ((_currentState == MinotaurState.Hurt && _stateTimer > 0) || _currentState == MinotaurState.Dead) return;
             if (_currentState == state) return;
