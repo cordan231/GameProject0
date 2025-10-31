@@ -12,11 +12,13 @@ namespace GameProject0
         private SpriteFont _spriteFont;
         private Texture2D _titleTexture;
         private PlayerSprite _playerSprite;
-        private Background _background; // Added
+        private Tilemap _tilemap;
         private List<string> _menuItems;
         private float _menuItemSpacing = 200f;
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
+
+        private const float GROUND_Y = 3 * 64 * 2.0f;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
@@ -24,7 +26,7 @@ namespace GameProject0
             _content = content;
             _graphicsDeviceManager = graphicsDeviceManager;
             _playerSprite = new PlayerSprite();
-            _background = new Background(); // Added
+            _tilemap = new Tilemap("map.txt");
             _menuItems = new List<string>
             {
                 "START GAME",
@@ -36,16 +38,16 @@ namespace GameProject0
         public void LoadContent()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
-            _background.LoadContent(_content, viewport); // Added
+            _tilemap.LoadContent(_content);
 
             _playerSprite.LoadContent(_content);
             _spriteFont = _content.Load<SpriteFont>("vcr");
             _titleTexture = _content.Load<Texture2D>("runner");
 
-            // Use Scenery.GroundY to position player
+            // Use new GROUND_Y to position player
             _playerSprite.Position = new Vector2(
                 300,
-                _background.GroundY - _playerSprite.Height
+                GROUND_Y - _playerSprite.Height
             );
         }
 
@@ -78,7 +80,7 @@ namespace GameProject0
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
             _playerSprite.Position = new Vector2(
                 MathHelper.Clamp(_playerSprite.Position.X, 0, viewport.Width - _playerSprite.Width),
-                _background.GroundY - _playerSprite.Height // Keep Y position locked to ground
+                GROUND_Y - _playerSprite.Height
             );
 
             if (inputManager.Select)
@@ -144,7 +146,7 @@ namespace GameProject0
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
-            _background.Draw(spriteBatch, viewport); // Added
+            _tilemap.Draw(gameTime, spriteBatch);
 
             Vector2 titlePosition = new Vector2((viewport.Width / 2f) - ((_titleTexture.Width * 3f) / 2f), 10f);
             spriteBatch.Draw(_titleTexture, titlePosition, null, Color.White, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);

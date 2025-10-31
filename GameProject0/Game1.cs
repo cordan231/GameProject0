@@ -91,7 +91,7 @@ namespace GameProject0
 
             _spriteBatch.Begin(
                 transformMatrix: cameraTransform,
-                samplerState: SamplerState.PointClamp // Added for crisp pixel art
+                samplerState: SamplerState.PointClamp
             );
             _screenManager.Draw(gameTime, _spriteBatch);
             _spriteBatch.End();

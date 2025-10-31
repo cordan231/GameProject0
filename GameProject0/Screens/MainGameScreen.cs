@@ -15,7 +15,7 @@ namespace GameProject0
     {
         private ScreenManager _screenManager;
         private PlayerSprite _playerSprite;
-        private Background _background; // Added
+        private Tilemap _tilemap;
         private List<Coin> _coins;
         private Random _random;
         private double _coinSpawnTimer;
@@ -32,13 +32,15 @@ namespace GameProject0
         private double _minotaurSpawnTimer;
         private const double MINOTAUR_SPAWN_TIME = 10.0;
 
+        private const float GROUND_Y = 3 * 64 * 2.0f;
+
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
             _screenManager = screenManager;
             _content = content;
             _graphicsDeviceManager = graphicsDeviceManager;
             _playerSprite = new PlayerSprite();
-            _background = new Background(); // Added
+            _tilemap = new Tilemap("map.txt");
             _coins = new List<Coin>();
             _random = new Random();
             _score = 0;
@@ -48,7 +50,7 @@ namespace GameProject0
         public void LoadContent()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
-            _background.LoadContent(_content, viewport); // Added
+            _tilemap.LoadContent(_content);
 
             _playerSprite.LoadContent(_content);
             _spriteFont = _content.Load<SpriteFont>("vcr");
@@ -56,10 +58,11 @@ namespace GameProject0
 
             _playerSprite.Scale = 1.5f;
 
-            // Use Scenery.GroundY to position player
+            float yOffset = (_playerSprite.Height * 0.4f);
+            float boxHeight = (_playerSprite.Height * 0.6f);
             _playerSprite.Position = new Vector2(
                 viewport.Width / 2 - _playerSprite.Width / 2,
-                _background.GroundY - _playerSprite.Height
+                GROUND_Y - (yOffset + boxHeight)
             );
         }
 
@@ -90,13 +93,13 @@ namespace GameProject0
             if (inputManager.Save)
             {
                 SaveGame();
-                // Optionally add feedback here, e.g., a "Game Saved!" message
+
             }
 
             if (inputManager.Load)
             {
                 LoadGame();
-                // Optionally add feedback here
+
             }
 
             _playerSprite.Update(gameTime);
@@ -104,7 +107,7 @@ namespace GameProject0
             if (_minotaur != null)
             {
                 _minotaur.Update(gameTime, viewport.Width);
-                _minotaur.Position = new Vector2(_minotaur.Position.X, _background.GroundY - _minotaur.Height);
+                _minotaur.Position = new Vector2(_minotaur.Position.X, GROUND_Y - _minotaur.Height);
             }
 
             HandleMinotaurSpawning(gameTime);
@@ -156,7 +159,7 @@ namespace GameProject0
                 Vector2 newPosition = _playerSprite.Position + inputManager.Direction * 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 newPosition.X = Math.Clamp(newPosition.X, 0, viewport.Width - _playerSprite.Width);
                 // Keep Y position locked to the ground
-                newPosition.Y = _background.GroundY - _playerSprite.Height;
+                newPosition.Y = GROUND_Y - _playerSprite.Height;
                 _playerSprite.Position = newPosition;
             }
 
@@ -209,12 +212,12 @@ namespace GameProject0
             int side = _random.Next(2); // 0 for left, 1 for right
             if (side == 0)
             {
-                _minotaur.Position = new Vector2(-_minotaur.Width, _background.GroundY - _minotaur.Height);
+                _minotaur.Position = new Vector2(-_minotaur.Width, GROUND_Y - _minotaur.Height);
                 _minotaur.Direction = Direction.Right;
             }
             else
             {
-                _minotaur.Position = new Vector2(viewport.Width, _background.GroundY - _minotaur.Height);
+                _minotaur.Position = new Vector2(viewport.Width, GROUND_Y - _minotaur.Height);
                 _minotaur.Direction = Direction.Left;
             }
             Game1.Instance.ShakeScreen(10f, 0.5f);
@@ -224,7 +227,7 @@ namespace GameProject0
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
-            _background.Draw(spriteBatch, viewport); // Added
+            _tilemap.Draw(gameTime, spriteBatch);
 
             _playerSprite.Draw(spriteBatch);
             _minotaur?.Draw(spriteBatch);
