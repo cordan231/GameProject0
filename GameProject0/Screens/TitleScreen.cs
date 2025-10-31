@@ -18,7 +18,7 @@ namespace GameProject0
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
 
-        private const float GROUND_Y = (12 * 16 * 2.0f) + 32f;
+        private const float GROUND_Y = 3 * 64 * 2.0f;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {

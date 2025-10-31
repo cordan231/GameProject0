@@ -15,7 +15,7 @@ namespace GameProject0
     {
         private ScreenManager _screenManager;
         private PlayerSprite _playerSprite;
-        private Tilemap _tilemap; 
+        private Tilemap _tilemap;
         private List<Coin> _coins;
         private Random _random;
         private double _coinSpawnTimer;
@@ -32,7 +32,7 @@ namespace GameProject0
         private double _minotaurSpawnTimer;
         private const double MINOTAUR_SPAWN_TIME = 10.0;
 
-        private const float GROUND_Y = (12 * 16 * 2.0f) + 32f;
+        private const float GROUND_Y = 3 * 64 * 2.0f;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {

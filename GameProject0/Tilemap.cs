@@ -63,7 +63,7 @@ namespace GameProject0
 
             for (int y = 0; y < tilesetRows; y++)
             {
-                for (int x = 0; x < tilesetColumns; x++) 
+                for (int x = 0; x < tilesetColumns; x++)
                 {
                     int index = y * tilesetColumns + x;
                     _tiles[index] = new Rectangle(
@@ -81,11 +81,31 @@ namespace GameProject0
             _mapHeight = int.Parse(thirdLine[1]);
 
             // Create map
-            var fourthLine = lines[3].Split(',');
             _map = new int[_mapWidth * _mapHeight];
+
+            var mapDataLines = new List<string>();
+            for (int i = 3; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    mapDataLines.Add(line);
+                }
+            }
+
+            var allMapData = string.Join(",", mapDataLines).Split(',');
+
             for (int i = 0; i < _mapWidth * _mapHeight; i++)
             {
-                _map[i] = int.Parse(fourthLine[i]);
+
+                if (i < allMapData.Length && !string.IsNullOrWhiteSpace(allMapData[i]))
+                {
+                    _map[i] = int.Parse(allMapData[i]);
+                }
+                else
+                {
+                    _map[i] = 0;
+                }
             }
 
         }
@@ -97,7 +117,7 @@ namespace GameProject0
                 for (int x = 0; x < _mapWidth; x++)
                 {
                     int index = _map[y * _mapWidth + x];
-                    if (index == 0) continue; // Skip empty tiles (index 0)
+                    if (index == 0) continue;
 
                     spriteBatch.Draw(
                         _tilesetTexture,

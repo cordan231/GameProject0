@@ -277,6 +277,18 @@
 /processorParam:TextureFormat=Color
 /build:Stop_Running.png
 
+#begin tileset.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:tileset.png
+
 #begin vcr.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor

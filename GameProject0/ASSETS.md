@@ -12,7 +12,12 @@ Asset File: coin-64x64.png
 Creator: kawanami1022
 Terms of Use: Free for personal and commercial use. The asset can be found at (https://kawanami1022.itch.io/coin)
 
-Asset Files: circle.png, explosion.png, particle.png, drop.png, smoke.bmp
+Asset File: Dungeon Ruins Tileset Day.png
+Creator: Penusbmic
+Terms of Use: Can be used for personal and commercial projects.
+Source: https://penusbmic.itch.io/free-dungeon-ruins-tileset
+
+Asset Files: circle.png, explosion.png, particle.png, drop.png, smoke.bmp, tileset.png
 Creator: Creative Commons
 
 Asset Files: runner.png, runner-logo.png, runner-title.png
