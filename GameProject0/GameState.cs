@@ -13,6 +13,7 @@ namespace GameProject0
         public Vector2 Position { get; set; }
         public int Health { get; set; }
         public CurrentState State { get; set; }
+        public Vector2 KnockbackVelocity { get; set; }
     }
 
     /// <summary>

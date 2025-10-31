@@ -40,7 +40,7 @@ namespace GameProject0
         private int _totalFrames;
         private double _frameTimer;
 
-        private Vector2 _knockbackVelocity;
+        public Vector2 KnockbackVelocity { get; set; }
         private const float KNOCKBACK_SPEED = 250f;
 
         private double _stateTimer;
@@ -136,18 +136,14 @@ namespace GameProject0
                 }
                 _frameTimer = 0;
             }
-            // Apply knockback slide if in Hurt state
-            if (_currentState == CurrentState.Hurt)
-            {
-                _position += _knockbackVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            }
+
+            // MOVEMENT LOGIC HAS BEEN REMOVED FROM HERE
+            // if (_currentState == CurrentState.Hurt) { ... }
 
             if (_currentState == CurrentState.Rolling)
             {
                 IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
-                float rollSpeed = 200f;
-                float moveDirection = (_currentDirection == Direction.Right) ? 1 : -1;
-                _position.X += moveDirection * rollSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                // MOVEMENT LOGIC HAS BEEN REMOVED FROM HERE
             }
             else
             {
@@ -197,7 +193,7 @@ namespace GameProject0
             {
                 SetState(CurrentState.Hurt);
                 float knockbackDirection = (hitDirection == Direction.Right) ? 1 : -1;
-                _knockbackVelocity = new Vector2(KNOCKBACK_SPEED * knockbackDirection, 0);
+                KnockbackVelocity = new Vector2(KNOCKBACK_SPEED * knockbackDirection, 0);
             }
         }
 
@@ -232,12 +228,12 @@ namespace GameProject0
             switch (state)
             {
                 case CurrentState.Idle:
-                    _knockbackVelocity = Vector2.Zero;
+                    KnockbackVelocity = Vector2.Zero;
                     _currentTexture = _idleTexture;
                     _totalFrames = 5;
                     break;
                 case CurrentState.Running:
-                    _knockbackVelocity = Vector2.Zero;
+                    KnockbackVelocity = Vector2.Zero;
                     _currentTexture = _runningTexture;
                     _totalFrames = 12;
                     break;
@@ -282,4 +278,3 @@ namespace GameProject0
         }
     }
 }
-

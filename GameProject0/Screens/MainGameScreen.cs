@@ -93,7 +93,6 @@ namespace GameProject0
             if (inputManager.Save)
             {
                 SaveGame();
-
             }
 
             if (inputManager.Load)
@@ -102,17 +101,47 @@ namespace GameProject0
                 return;
             }
 
+            // Centralized update logic
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _playerSprite.Update(gameTime);
-            // Update Minotaur position based on ground
+
+            // Handle Minotaur Updates
             if (_minotaur != null)
             {
                 _minotaur.Update(gameTime, viewport.Width);
-                _minotaur.Position = new Vector2(_minotaur.Position.X, GROUND_Y - _minotaur.Height);
+
+                Vector2 minotaurNewPos = _minotaur.Position;
+
+                // CENTRALIZED MINOTAUR MOVEMENT
+                if (_minotaur.CurrentState == MinotaurState.Walk)
+                {
+                    float speed = 100f * dt;
+                    if (_minotaur.Direction == Direction.Left)
+                    {
+                        minotaurNewPos.X -= speed;
+                        if (minotaurNewPos.X < 0)
+                        {
+                            minotaurNewPos.X = 0;
+                            _minotaur.Direction = Direction.Right;
+                        }
+                    }
+                    else
+                    {
+                        minotaurNewPos.X += speed;
+                        if (minotaurNewPos.X > viewport.Width - _minotaur.Width)
+                        {
+                            minotaurNewPos.X = viewport.Width - _minotaur.Width;
+                            _minotaur.Direction = Direction.Left;
+                        }
+                    }
+                }
+                minotaurNewPos.Y = GROUND_Y - _minotaur.Height;
+                _minotaur.Position = minotaurNewPos;
             }
 
             HandleMinotaurSpawning(gameTime);
 
-            // Only process new actions if the player is in a state that allows it
+            // Handle Player Input
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
             {
                 if (inputManager.Roll)
@@ -134,7 +163,7 @@ namespace GameProject0
                 }
             }
 
-
+            // Handle Collisions
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
                 // Player attacks minotaur
@@ -153,17 +182,31 @@ namespace GameProject0
                 }
             }
 
-            // Player movement is now conditional on state
+            // CENTRALIZED PLAYER MOVEMENT
+            Vector2 playerNewPos = _playerSprite.Position;
             if (_playerSprite.CurrentPlayerState == CurrentState.Running || _playerSprite.CurrentPlayerState == CurrentState.Idle)
             {
-                Vector2 newPosition = _playerSprite.Position + inputManager.Direction * 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                newPosition.X = Math.Clamp(newPosition.X, 0, viewport.Width - _playerSprite.Width);
-                // Keep Y position locked to the ground
-                newPosition.Y = GROUND_Y - _playerSprite.Height;
-                _playerSprite.Position = newPosition;
+                playerNewPos += inputManager.Direction * 200f * dt;
+                playerNewPos.Y = GROUND_Y - _playerSprite.Height;
+            }
+            else if (_playerSprite.CurrentPlayerState == CurrentState.Rolling)
+            {
+                float rollSpeed = 200f;
+                float moveDirection = (_playerSprite._currentDirection == Direction.Right) ? 1 : -1;
+                playerNewPos.X += moveDirection * rollSpeed * dt;
+                playerNewPos.Y = GROUND_Y - _playerSprite.Height;
+            }
+            else if (_playerSprite.CurrentPlayerState == CurrentState.Hurt)
+            {
+                playerNewPos += _playerSprite.KnockbackVelocity * dt;
             }
 
+            // Clamp player position to screen
+            playerNewPos.X = Math.Clamp(playerNewPos.X, 0, viewport.Width - _playerSprite.Width);
+            _playerSprite.Position = playerNewPos;
 
+
+            // Handle Coins
             _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
             if (_coinSpawnTimer > 1.0)
             {
@@ -259,7 +302,8 @@ namespace GameProject0
                 {
                     Position = _playerSprite.Position,
                     Health = _playerSprite.Health,
-                    State = _playerSprite.CurrentPlayerState
+                    State = _playerSprite.CurrentPlayerState,
+                    KnockbackVelocity = _playerSprite.KnockbackVelocity
                 },
                 CoinPositions = _coins.Select(c => c.Position).ToList(),
                 Minotaur = _minotaur == null ? new EnemyData { IsRemoved = true } : new EnemyData
@@ -290,6 +334,7 @@ namespace GameProject0
             _playerSprite.Position = state.Player.Position;
             _playerSprite.SetHealth(state.Player.Health);
             _playerSprite.SetState(state.Player.State);
+            _playerSprite.KnockbackVelocity = state.Player.KnockbackVelocity;
 
             // Restore coins
             _coins.Clear();
