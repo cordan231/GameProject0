@@ -93,26 +93,55 @@ namespace GameProject0
             if (inputManager.Save)
             {
                 SaveGame();
-
             }
 
             if (inputManager.Load)
             {
                 LoadGame();
-
+                return;
             }
 
+            // Centralized update logic
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _playerSprite.Update(gameTime);
-            // Update Minotaur position based on ground
+
+            // Handle Minotaur Updates
             if (_minotaur != null)
             {
                 _minotaur.Update(gameTime, viewport.Width);
-                _minotaur.Position = new Vector2(_minotaur.Position.X, GROUND_Y - _minotaur.Height);
+
+                Vector2 minotaurNewPos = _minotaur.Position;
+
+                // CENTRALIZED MINOTAUR MOVEMENT
+                if (_minotaur.CurrentState == MinotaurState.Walk)
+                {
+                    float speed = 100f * dt;
+                    if (_minotaur.Direction == Direction.Left)
+                    {
+                        minotaurNewPos.X -= speed;
+                        if (minotaurNewPos.X < 0)
+                        {
+                            minotaurNewPos.X = 0;
+                            _minotaur.Direction = Direction.Right;
+                        }
+                    }
+                    else
+                    {
+                        minotaurNewPos.X += speed;
+                        if (minotaurNewPos.X > viewport.Width - _minotaur.Width)
+                        {
+                            minotaurNewPos.X = viewport.Width - _minotaur.Width;
+                            _minotaur.Direction = Direction.Left;
+                        }
+                    }
+                }
+                minotaurNewPos.Y = GROUND_Y - _minotaur.Height;
+                _minotaur.Position = minotaurNewPos;
             }
 
             HandleMinotaurSpawning(gameTime);
 
-            // Only process new actions if the player is in a state that allows it
+            // Handle Player Input
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
             {
                 if (inputManager.Roll)
@@ -134,7 +163,7 @@ namespace GameProject0
                 }
             }
 
-
+            // Handle Collisions
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
                 // Player attacks minotaur
@@ -153,17 +182,31 @@ namespace GameProject0
                 }
             }
 
-            // Player movement is now conditional on state
+            // CENTRALIZED PLAYER MOVEMENT
+            Vector2 playerNewPos = _playerSprite.Position;
             if (_playerSprite.CurrentPlayerState == CurrentState.Running || _playerSprite.CurrentPlayerState == CurrentState.Idle)
             {
-                Vector2 newPosition = _playerSprite.Position + inputManager.Direction * 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                newPosition.X = Math.Clamp(newPosition.X, 0, viewport.Width - _playerSprite.Width);
-                // Keep Y position locked to the ground
-                newPosition.Y = GROUND_Y - _playerSprite.Height;
-                _playerSprite.Position = newPosition;
+                playerNewPos += inputManager.Direction * 200f * dt;
+                playerNewPos.Y = GROUND_Y - _playerSprite.Height;
+            }
+            else if (_playerSprite.CurrentPlayerState == CurrentState.Rolling)
+            {
+                float rollSpeed = 200f;
+                float moveDirection = (_playerSprite._currentDirection == Direction.Right) ? 1 : -1;
+                playerNewPos.X += moveDirection * rollSpeed * dt;
+                playerNewPos.Y = GROUND_Y - _playerSprite.Height;
+            }
+            else if (_playerSprite.CurrentPlayerState == CurrentState.Hurt)
+            {
+                playerNewPos += _playerSprite.KnockbackVelocity * dt;
             }
 
+            // Clamp player position to screen
+            playerNewPos.X = Math.Clamp(playerNewPos.X, 0, viewport.Width - _playerSprite.Width);
+            _playerSprite.Position = playerNewPos;
 
+
+            // Handle Coins
             _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
             if (_coinSpawnTimer > 1.0)
             {
@@ -242,13 +285,13 @@ namespace GameProject0
                 spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
             }
 
-            string instructions = "E TO ATTACK   SPACE TO DODGE";
-            Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
-            Vector2 instructionsPosition = new Vector2(
-                viewport.Width - instructionsSize.X - 10,
-                viewport.Height - instructionsSize.Y - 10
-            );
-            spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
+            //string instructions = "E TO ATTACK   SPACE TO DODGE";
+            //Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
+            //Vector2 instructionsPosition = new Vector2(
+            //    viewport.Width - instructionsSize.X - 10,
+            //    viewport.Height - instructionsSize.Y - 10
+            //);
+            //spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
         }
         private void SaveGame()
         {
@@ -257,16 +300,20 @@ namespace GameProject0
                 Score = _score,
                 Player = new PlayerData
                 {
-                    Position = _playerSprite.Position,
-                    Health = _playerSprite.Health
+                    Position = new VectorData(_playerSprite.Position),
+                    Health = _playerSprite.Health,
+                    State = _playerSprite.CurrentPlayerState,
+                    KnockbackVelocity = new VectorData(_playerSprite.KnockbackVelocity),
+                    Direction = _playerSprite._currentDirection
                 },
-                CoinPositions = _coins.Select(c => c.Position).ToList(),
-                Minotaur = new EnemyData
+                CoinPositions = _coins.Select(c => new VectorData(c.Position)).ToList(),
+                Minotaur = _minotaur == null ? new EnemyData { IsRemoved = true } : new EnemyData
                 {
-                    IsRemoved = _minotaur == null || _minotaur.IsRemoved,
-                    Position = _minotaur?.Position ?? Vector2.Zero,
-                    Health = _minotaur?.Health ?? 0,
-                    Direction = _minotaur?.Direction ?? Direction.Right
+                    IsRemoved = _minotaur.IsRemoved,
+                    Position = new VectorData(_minotaur.Position),
+                    Health = _minotaur.Health,
+                    Direction = _minotaur.Direction,
+                    State = _minotaur.CurrentState
                 }
             };
 
@@ -285,8 +332,13 @@ namespace GameProject0
 
             // Restore game state
             _score = state.Score;
-            _playerSprite.Position = state.Player.Position;
+
+            // Restore player
             _playerSprite.SetHealth(state.Player.Health);
+            _playerSprite.SetState(state.Player.State);
+            _playerSprite.KnockbackVelocity = state.Player.KnockbackVelocity.ToVector2();
+            _playerSprite._currentDirection = state.Player.Direction;
+            _playerSprite.Position = state.Player.Position.ToVector2();
 
             // Restore coins
             _coins.Clear();
@@ -294,7 +346,7 @@ namespace GameProject0
             {
                 var coin = new Coin();
                 coin.LoadContent(_content);
-                coin.Position = pos;
+                coin.Position = pos.ToVector2();
                 _coins.Add(coin);
             }
 
@@ -303,9 +355,10 @@ namespace GameProject0
             {
                 _minotaur = new Minotaur();
                 _minotaur.LoadContent(_content);
-                _minotaur.Position = state.Minotaur.Position;
                 _minotaur.Health = state.Minotaur.Health;
                 _minotaur.Direction = state.Minotaur.Direction;
+                _minotaur.SetState(state.Minotaur.State);
+                _minotaur.Position = state.Minotaur.Position.ToVector2();
             }
             else
             {

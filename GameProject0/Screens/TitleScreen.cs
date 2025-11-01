@@ -17,6 +17,7 @@ namespace GameProject0
         private float _menuItemSpacing = 200f;
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
+        private Texture2D _whitePixelTexture;
 
         private const float GROUND_Y = 3 * 64 * 2.0f;
 
@@ -30,7 +31,7 @@ namespace GameProject0
             _menuItems = new List<string>
             {
                 "START GAME",
-                "OPTIONS",
+                "CONTROLS",
                 "EXIT"
             };
         }
@@ -42,9 +43,11 @@ namespace GameProject0
 
             _playerSprite.LoadContent(_content);
             _spriteFont = _content.Load<SpriteFont>("vcr");
-            _titleTexture = _content.Load<Texture2D>("runner");
+            _titleTexture = _content.Load<Texture2D>("fight-logo");
 
-            // Use new GROUND_Y to position player
+            _whitePixelTexture = new Texture2D(_graphicsDeviceManager.GraphicsDevice, 1, 1);
+            _whitePixelTexture.SetData(new[] { Color.White });
+
             _playerSprite.Position = new Vector2(
                 300,
                 GROUND_Y - _playerSprite.Height
@@ -94,7 +97,7 @@ namespace GameProject0
                             _screenManager.LoadScreen(new MainGameScreen());
                             break;
                         case 1:
-                            System.Console.WriteLine("Selected: OPTIONS");
+                            _screenManager.LoadScreen(new ControlScreen());
                             break;
                         case 2:
                             _screenManager.ExitGame();
@@ -160,15 +163,42 @@ namespace GameProject0
 
             for (int i = 0; i < _menuItems.Count; i++)
             {
-                Vector2 textSize = _spriteFont.MeasureString(_menuItems[i]);
+                string text = _menuItems[i];
+                Vector2 textSize = _spriteFont.MeasureString(text);
                 Vector2 textPosition = new Vector2(
                     menuStartPos.X + i * _menuItemSpacing - textSize.X / 2f,
                     menuStartPos.Y - 50
                 );
 
-                Color color = (i == selectedIndex) ? Color.White : Color.Black;
+                bool isSelected = (i == selectedIndex);
 
-                spriteBatch.DrawString(_spriteFont, _menuItems[i], textPosition, color);
+                if (isSelected)
+                {
+                    float padding = 10f;
+                    float outlineThickness = 2f;
+
+                    Rectangle backgroundRect = new Rectangle(
+                        (int)(textPosition.X - padding),
+                        (int)(textPosition.Y - padding),
+                        (int)(textSize.X + padding * 2),
+                        (int)(textSize.Y + padding * 2)
+                    );
+
+                    Rectangle outlineRect = new Rectangle(
+                        backgroundRect.X - (int)outlineThickness,
+                        backgroundRect.Y - (int)outlineThickness,
+                        backgroundRect.Width + (int)(outlineThickness * 2),
+                        backgroundRect.Height + (int)(outlineThickness * 2)
+                    );
+
+                    spriteBatch.Draw(_whitePixelTexture, outlineRect, Color.White);
+                    spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139));
+                    spriteBatch.DrawString(_spriteFont, text, textPosition, Color.White);
+                }
+                else
+                {
+                    spriteBatch.DrawString(_spriteFont, text, textPosition, Color.Black);
+                }
             }
 
             string instructions = "<- -> or A D TO MOVE     ENTER TO SELECT";

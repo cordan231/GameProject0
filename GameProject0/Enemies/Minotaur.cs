@@ -53,6 +53,8 @@ namespace GameProject0.Enemies
         public BoundingRectangle Bounds { get; private set; }
         public BoundingRectangle AttackBox { get; private set; }
 
+        public MinotaurState CurrentState => _currentState;
+
         public Vector2 Position
         {
             get => _position;
@@ -117,25 +119,6 @@ namespace GameProject0.Enemies
                     _attackTimer = 4.0;
                 }
 
-                float speed = 100f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (_direction == Direction.Left)
-                {
-                    _position.X -= speed;
-                    if (_position.X < 0)
-                    {
-                        _position.X = 0;
-                        _direction = Direction.Right;
-                    }
-                }
-                else
-                {
-                    _position.X += speed;
-                    if (_position.X > screenWidth - Width)
-                    {
-                        _position.X = screenWidth - Width;
-                        _direction = Direction.Left;
-                    }
-                }
             }
 
             _animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
@@ -162,8 +145,6 @@ namespace GameProject0.Enemies
             }
 
             IsAttackHitboxActive = (_currentState == MinotaurState.Attack && _currentFrame >= 3);
-
-            Position = _position;
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -193,7 +174,7 @@ namespace GameProject0.Enemies
             }
         }
 
-        private void SetState(MinotaurState state)
+        public void SetState(MinotaurState state)
         {
             if ((_currentState == MinotaurState.Hurt && _stateTimer > 0) || _currentState == MinotaurState.Dead) return;
             if (_currentState == state) return;

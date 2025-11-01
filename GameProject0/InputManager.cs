@@ -11,7 +11,7 @@ namespace GameProject0
         public Vector2 Direction { get; private set; }
         public bool Exit { get; private set; } = false;
         public bool Select { get; private set; } = false;
-        public bool Damage { get; private set; } = false; // For debugging
+        public bool Damage { get; private set; } = false;
         public bool Attack { get; private set; } = false;
         public bool Roll { get; private set; } = false;
 
