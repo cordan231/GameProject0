@@ -300,16 +300,17 @@ namespace GameProject0
                 Score = _score,
                 Player = new PlayerData
                 {
-                    Position = _playerSprite.Position,
+                    Position = new VectorData(_playerSprite.Position),
                     Health = _playerSprite.Health,
                     State = _playerSprite.CurrentPlayerState,
-                    KnockbackVelocity = _playerSprite.KnockbackVelocity
+                    KnockbackVelocity = new VectorData(_playerSprite.KnockbackVelocity),
+                    Direction = _playerSprite._currentDirection
                 },
-                CoinPositions = _coins.Select(c => c.Position).ToList(),
+                CoinPositions = _coins.Select(c => new VectorData(c.Position)).ToList(),
                 Minotaur = _minotaur == null ? new EnemyData { IsRemoved = true } : new EnemyData
                 {
                     IsRemoved = _minotaur.IsRemoved,
-                    Position = _minotaur.Position,
+                    Position = new VectorData(_minotaur.Position),
                     Health = _minotaur.Health,
                     Direction = _minotaur.Direction,
                     State = _minotaur.CurrentState
@@ -331,10 +332,13 @@ namespace GameProject0
 
             // Restore game state
             _score = state.Score;
-            _playerSprite.Position = state.Player.Position;
+
+            // Restore player
             _playerSprite.SetHealth(state.Player.Health);
             _playerSprite.SetState(state.Player.State);
-            _playerSprite.KnockbackVelocity = state.Player.KnockbackVelocity;
+            _playerSprite.KnockbackVelocity = state.Player.KnockbackVelocity.ToVector2();
+            _playerSprite._currentDirection = state.Player.Direction;
+            _playerSprite.Position = state.Player.Position.ToVector2();
 
             // Restore coins
             _coins.Clear();
@@ -342,7 +346,7 @@ namespace GameProject0
             {
                 var coin = new Coin();
                 coin.LoadContent(_content);
-                coin.Position = pos;
+                coin.Position = pos.ToVector2();
                 _coins.Add(coin);
             }
 
@@ -351,10 +355,10 @@ namespace GameProject0
             {
                 _minotaur = new Minotaur();
                 _minotaur.LoadContent(_content);
-                _minotaur.Position = state.Minotaur.Position;
                 _minotaur.Health = state.Minotaur.Health;
                 _minotaur.Direction = state.Minotaur.Direction;
                 _minotaur.SetState(state.Minotaur.State);
+                _minotaur.Position = state.Minotaur.Position.ToVector2();
             }
             else
             {
