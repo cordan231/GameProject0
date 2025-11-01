@@ -43,7 +43,7 @@ namespace GameProject0
 
             _playerSprite.LoadContent(_content);
             _spriteFont = _content.Load<SpriteFont>("vcr");
-            _titleTexture = _content.Load<Texture2D>("runner");
+            _titleTexture = _content.Load<Texture2D>("fight-logo");
 
             _whitePixelTexture = new Texture2D(_graphicsDeviceManager.GraphicsDevice, 1, 1);
             _whitePixelTexture.SetData(new[] { Color.White });

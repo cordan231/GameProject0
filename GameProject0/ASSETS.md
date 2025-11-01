@@ -20,7 +20,7 @@ Source: https://penusbmic.itch.io/free-dungeon-ruins-tileset
 Asset Files: circle.png, explosion.png, particle.png, drop.png, smoke.bmp, tileset.png
 Creator: Creative Commons
 
-Asset Files: runner.png, runner-logo.png, runner-title.png
+Asset Files: runner.png, runner-logo.png, runner-title.png, fight-logo
 Creator: Developer
 
 Asset File: background.png
