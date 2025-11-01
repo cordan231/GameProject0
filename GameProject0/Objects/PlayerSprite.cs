@@ -137,13 +137,10 @@ namespace GameProject0
                 _frameTimer = 0;
             }
 
-            // MOVEMENT LOGIC HAS BEEN REMOVED FROM HERE
-            // if (_currentState == CurrentState.Hurt) { ... }
-
             if (_currentState == CurrentState.Rolling)
             {
                 IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
-                // MOVEMENT LOGIC HAS BEEN REMOVED FROM HERE
+
             }
             else
             {

@@ -29,7 +29,6 @@ namespace GameProject0
 
     /// <summary>
     /// A helper class to store player-specific data.
-    /// Needs public properties for JSON serialization.
     /// </summary>
     public class PlayerData
     {

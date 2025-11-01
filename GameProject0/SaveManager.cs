@@ -6,7 +6,6 @@ namespace GameProject0
 {
     public static class SaveManager
     {
-        // We'll store the save file in a user-specific folder
         private static string _savePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "GameProject0"

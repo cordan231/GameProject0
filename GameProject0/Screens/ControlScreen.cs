@@ -80,7 +80,7 @@ namespace GameProject0
             );
 
             spriteBatch.Draw(_whitePixelTexture, outlineRect, Color.White);
-            spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139)); // Dark Blue
+            spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139));
 
             float textStartY = backgroundRect.Y + padding;
 

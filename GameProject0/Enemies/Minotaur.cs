@@ -119,7 +119,6 @@ namespace GameProject0.Enemies
                     _attackTimer = 4.0;
                 }
 
-                // MOVEMENT LOGIC HAS BEEN REMOVED FROM HERE
             }
 
             _animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
@@ -146,8 +145,6 @@ namespace GameProject0.Enemies
             }
 
             IsAttackHitboxActive = (_currentState == MinotaurState.Attack && _currentFrame >= 3);
-
-            // Position = _position; // THIS LINE WAS ALSO REMOVED
         }
 
         public void Draw(SpriteBatch spriteBatch)
