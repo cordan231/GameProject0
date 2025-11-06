@@ -9,12 +9,14 @@ namespace GameProject0
         private IndexBuffer _indexBuffer;
         private BasicEffect _effect;
         private Game _game;
+        private Color _color;
 
         public Matrix World { get; set; } = Matrix.Identity;
 
-        public Heart(Game game)
+        public Heart(Game game, Color color)
         {
             _game = game;
+            _color = color;
             InitializeVertices();
             InitializeIndices();
             InitializeEffect();
@@ -22,23 +24,26 @@ namespace GameProject0
 
         private void InitializeVertices()
         {
+            // Create a darker shade for the back
+            var darkColor = Color.Lerp(_color, Color.Black, 0.5f);
+
             var vertexData = new VertexPositionColor[]
             {
-                // Front Face
-                new VertexPositionColor(new Vector3(0, 0, 0), Color.Red), // 0
-                new VertexPositionColor(new Vector3(-1, 1, 0), Color.Red), // 1
-                new VertexPositionColor(new Vector3(-2, 0, 0), Color.Red), // 2
-                new VertexPositionColor(new Vector3(0, -2, 0), Color.Red), // 3
-                new VertexPositionColor(new Vector3(2, 0, 0), Color.Red), // 4
-                new VertexPositionColor(new Vector3(1, 1, 0), Color.Red), // 5
+                // Front Face (use the new _color)
+                new VertexPositionColor(new Vector3(0, 0, 0), _color), // 0
+                new VertexPositionColor(new Vector3(-1, 1, 0), _color), // 1
+                new VertexPositionColor(new Vector3(-2, 0, 0), _color), // 2
+                new VertexPositionColor(new Vector3(0, -2, 0), _color), // 3
+                new VertexPositionColor(new Vector3(2, 0, 0), _color), // 4
+                new VertexPositionColor(new Vector3(1, 1, 0), _color), // 5
 
-                // Back Face (Z = -1)
-                new VertexPositionColor(new Vector3(0, 0, -1), Color.DarkRed), // 6
-                new VertexPositionColor(new Vector3(-1, 1, -1), Color.DarkRed), // 7
-                new VertexPositionColor(new Vector3(-2, 0, -1), Color.DarkRed), // 8
-                new VertexPositionColor(new Vector3(0, -2, -1), Color.DarkRed), // 9
-                new VertexPositionColor(new Vector3(2, 0, -1), Color.DarkRed), // 10
-                new VertexPositionColor(new Vector3(1, 1, -1), Color.DarkRed), // 11
+                // Back Face (use the new darkColor)
+                new VertexPositionColor(new Vector3(0, 0, -1), darkColor), // 6
+                new VertexPositionColor(new Vector3(-1, 1, -1), darkColor), // 7
+                new VertexPositionColor(new Vector3(-2, 0, -1), darkColor), // 8
+                new VertexPositionColor(new Vector3(0, -2, -1), darkColor), // 9
+                new VertexPositionColor(new Vector3(2, 0, -1), darkColor), // 10
+                new VertexPositionColor(new Vector3(1, 1, -1), darkColor), // 11
             };
 
             _vertexBuffer = new VertexBuffer(

@@ -34,7 +34,8 @@ namespace GameProject0
 
         private const float GROUND_Y = 3 * 64 * 2.0f;
 
-        private List<Heart> _hearts;
+        private List<Heart> _minotaurHearts;
+        private List<Heart> _playerHearts;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
@@ -47,7 +48,8 @@ namespace GameProject0
             _random = new Random();
             _score = 0;
             _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME;
-            _hearts = new List<Heart>();
+            _minotaurHearts = new List<Heart>();
+            _playerHearts = new List<Heart>();
         }
 
         public void LoadContent()
@@ -68,11 +70,15 @@ namespace GameProject0
                 GROUND_Y - (yOffset + boxHeight)
             );
 
-            _hearts.Clear();
+            _minotaurHearts.Clear();
+            _playerHearts.Clear();
             for (int i = 0; i < 3; i++)
             {
-                var heart = new Heart(Game1.Instance);
-                _hearts.Add(heart);
+                // Minotaur gets Red hearts
+                _minotaurHearts.Add(new Heart(Game1.Instance, Color.Red));
+
+                // Player gets Blue hearts
+                _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
             }
 
         }
@@ -273,11 +279,11 @@ namespace GameProject0
                 Vector3 basePosition = new Vector3(worldX, worldY, 0);
 
                 // 4. Position the hearts relative to this 3D anchor point
-                for (int i = 0; i < _hearts.Count; i++)
+                for (int i = 0; i < _minotaurHearts.Count; i++)
                 {
-                    xOffset = (i - (_hearts.Count - 1) / 2.0f) * 0.8f;
+                    xOffset = (i - (_minotaurHearts.Count - 1) / 2.0f) * 0.8f;
 
-                    _hearts[i].World = Matrix.CreateScale(0.2f) *
+                    _minotaurHearts[i].World = Matrix.CreateScale(0.2f) *
                                        Matrix.CreateRotationY(angle) *
                                        Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
                 }
@@ -285,10 +291,26 @@ namespace GameProject0
             else
             {
                 // If there's no minotaur, hide the hearts far away
-                for (int i = 0; i < _hearts.Count; i++)
+                for (int i = 0; i < _minotaurHearts.Count; i++)
                 {
-                    _hearts[i].World = Matrix.CreateTranslation(1000, 1000, 0);
+                    _minotaurHearts[i].World = Matrix.CreateTranslation(1000, 1000, 0);
                 }
+            }
+
+            // --- Position Player hearts in the top-right corner ---
+            float topEdgeOfView = 3.5f;    // 3D Y-coordinate for top of screen
+            float rightEdgeOfView = 5.5f;  // 3D X-coordinate for right of screen
+            float playerHeartScale = 0.2f;
+            float playerHeartSpacing = 1.0f;
+
+            for (int i = 0; i < _playerHearts.Count; i++)
+            {
+                // We subtract 'i' to build the hearts from right-to-left
+                xOffset = rightEdgeOfView - (i * playerHeartSpacing);
+
+                _playerHearts[i].World = Matrix.CreateScale(playerHeartScale) *
+                                       Matrix.CreateRotationY(angle) *
+                                       Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
             }
 
         }
@@ -339,7 +361,7 @@ namespace GameProject0
                 coin.Draw(spriteBatch);
             }
             spriteBatch.DrawString(_spriteFont, $"Score: {_score}", new Vector2(10, 10), Color.White);
-            spriteBatch.DrawString(_spriteFont, $"Player HP: {_playerSprite.Health}", new Vector2(10, 50), Color.White);
+            //spriteBatch.DrawString(_spriteFont, $"Player HP: {_playerSprite.Health}", new Vector2(10, 50), Color.White);
             //if (_minotaur != null && !_minotaur.IsRemoved)
             //{
             //    spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
@@ -361,19 +383,27 @@ namespace GameProject0
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
             graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
-            // Determine how many hearts to draw based on Minotaur's health
-            int heartsToDraw = 0;
+            // --- Draw Minotaur Hearts ---
+            int minotaurHeartsToDraw = 0;
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
-                heartsToDraw = _minotaur.Health;
+                minotaurHeartsToDraw = _minotaur.Health;
+            }
+            for (int i = 0; i < minotaurHeartsToDraw; i++)
+            {
+                if (i < _minotaurHearts.Count)
+                {
+                    _minotaurHearts[i].Draw();
+                }
             }
 
-            // Draw the correct number of hearts
-            for (int i = 0; i < heartsToDraw; i++)
+            // --- Draw Player Hearts ---
+            int playerHeartsToDraw = _playerSprite.Health;
+            for (int i = 0; i < playerHeartsToDraw; i++)
             {
-                if (i < _hearts.Count)
+                if (i < _playerHearts.Count)
                 {
-                    _hearts[i].Draw();
+                    _playerHearts[i].Draw();
                 }
             }
         }
