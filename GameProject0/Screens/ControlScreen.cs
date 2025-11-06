@@ -94,5 +94,11 @@ namespace GameProject0
                 spriteBatch.DrawString(_spriteFont, controls[i], textPosition, Color.White);
             }
         }
+
+        public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
+        {
+            // This screen has no 3D elements
+        }
+
     }
 }

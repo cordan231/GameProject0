@@ -34,6 +34,8 @@ namespace GameProject0
 
         private const float GROUND_Y = 3 * 64 * 2.0f;
 
+        private List<Heart> _hearts;
+
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
             _screenManager = screenManager;
@@ -45,6 +47,7 @@ namespace GameProject0
             _random = new Random();
             _score = 0;
             _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME;
+            _hearts = new List<Heart>();
         }
 
         public void LoadContent()
@@ -64,6 +67,14 @@ namespace GameProject0
                 viewport.Width / 2 - _playerSprite.Width / 2,
                 GROUND_Y - (yOffset + boxHeight)
             );
+
+            _hearts.Clear();
+            for (int i = 0; i < 3; i++)
+            {
+                var heart = new Heart(Game1.Instance);
+                _hearts.Add(heart);
+            }
+
         }
 
         public void Update(GameTime gameTime, InputManager inputManager)
@@ -231,6 +242,21 @@ namespace GameProject0
                     _coins.RemoveAt(i);
                 }
             }
+
+
+            float angle = (float)gameTime.TotalGameTime.TotalSeconds * 1.5f;
+            viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+
+            float topEdgeOfView = 3.5f;
+            float leftEdgeOfView = -4.5f;
+
+            for (int i = 0; i < _hearts.Count; i++)
+            {
+                _hearts[i].World = Matrix.CreateScale(0.25f) *
+                                   Matrix.CreateRotationY(angle) *
+                                   Matrix.CreateTranslation(new Vector3(leftEdgeOfView + (i * 0.8f), topEdgeOfView, 0));
+            }
+
         }
 
         private void HandleMinotaurSpawning(GameTime gameTime)
@@ -293,6 +319,25 @@ namespace GameProject0
             //);
             //spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
         }
+
+        public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
+        {
+            // Reset graphics device states for 3D rendering
+            // SpriteBatch changes these, so we must set them back
+            graphicsDevice.BlendState = BlendState.Opaque;
+            graphicsDevice.DepthStencilState = DepthStencilState.Default;
+            graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+
+            // Draw hearts based on player health
+            for (int i = 0; i < _playerSprite.Health; i++)
+            {
+                if (i < _hearts.Count)
+                {
+                    _hearts[i].Draw();
+                }
+            }
+        }
+
         private void SaveGame()
         {
             var state = new GameState

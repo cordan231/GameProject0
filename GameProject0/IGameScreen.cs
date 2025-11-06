@@ -11,5 +11,6 @@ namespace GameProject0
         void LoadContent();
         void Update(GameTime gameTime, InputManager inputManager);
         void Draw(GameTime gameTime, SpriteBatch spriteBatch);
+        void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice);
     }
 }

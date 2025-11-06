@@ -211,5 +211,11 @@ namespace GameProject0
 
             _playerSprite.Draw(spriteBatch);
         }
+
+        public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
+        {
+            // This screen has no 3D elements
+        }
+
     }
 }

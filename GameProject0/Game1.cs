@@ -81,6 +81,8 @@ namespace GameProject0
         {
             GraphicsDevice.Clear(Color.PaleTurquoise);
 
+            _screenManager.CurrentScreen?.Draw3D(gameTime, GraphicsDevice);
+
             Matrix cameraTransform = Matrix.Identity;
             if (_screenShakeTimer > 0)
             {

@@ -11,6 +11,8 @@ namespace GameProject0
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
 
+        public IGameScreen CurrentScreen => _currentScreen;
+
         public bool ShouldExit { get; private set; } = false;
 
         public void ExitGame()
