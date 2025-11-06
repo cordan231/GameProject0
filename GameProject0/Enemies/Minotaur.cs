@@ -176,8 +176,9 @@ namespace GameProject0.Enemies
 
         public void SetState(MinotaurState state)
         {
-            if ((_currentState == MinotaurState.Hurt && _stateTimer > 0) || _currentState == MinotaurState.Dead) return;
             if (_currentState == state) return;
+            if (_currentState == MinotaurState.Dead) return;
+            if (_currentState == MinotaurState.Hurt && _stateTimer > 0 && state != MinotaurState.Dead) return;
 
             _currentState = state;
             _currentFrame = 0;

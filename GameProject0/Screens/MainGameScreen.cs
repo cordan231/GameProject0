@@ -213,7 +213,15 @@ namespace GameProject0
             }
 
             // Clamp player position to screen
-            playerNewPos.X = Math.Clamp(playerNewPos.X, 0, viewport.Width - _playerSprite.Width);
+            float scale = _playerSprite.Scale;
+            float frameWidth = 128 * scale; // This is _playerSprite.Width
+            float boxWidth = frameWidth * 0.35f; // From PlayerSprite.cs
+            float xOffset = (frameWidth - boxWidth) / 2; // From PlayerSprite.cs
+
+            float minX = -xOffset;
+            float maxX = viewport.Width - xOffset - boxWidth;
+
+            playerNewPos.X = Math.Clamp(playerNewPos.X, minX, maxX);
             _playerSprite.Position = playerNewPos;
 
 
@@ -247,14 +255,41 @@ namespace GameProject0
             float angle = (float)gameTime.TotalGameTime.TotalSeconds * 1.5f;
             viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
-            float topEdgeOfView = 3.5f;
-            float leftEdgeOfView = -4.5f;
-
-            for (int i = 0; i < _hearts.Count; i++)
+            if (_minotaur != null && !_minotaur.IsRemoved)
             {
-                _hearts[i].World = Matrix.CreateScale(0.25f) *
-                                   Matrix.CreateRotationY(angle) *
-                                   Matrix.CreateTranslation(new Vector3(leftEdgeOfView + (i * 0.8f), topEdgeOfView, 0));
+                // 1. Get the Minotaur's 2D position 
+                float pixelX = _minotaur.Position.X + _minotaur.Width / 2;
+                float pixelY = _minotaur.Position.Y + 30; 
+
+                // 2. Calculate the 3D camera's view size at Z=0 (based on Heart.cs camera)
+
+                float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f); // 10 = Z-distance, (Pi / 8f) = FOV/2
+
+                float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
+
+                // 3. Convert 2D pixel coordinates to 3D world coordinates
+                float worldX = (pixelX - viewport.Width / 2) / (viewport.Width / 2) * worldHalfWidth;
+                float worldY = -(pixelY - viewport.Height / 2) / (viewport.Height / 2) * worldHalfHeight;
+                Vector3 basePosition = new Vector3(worldX, worldY, 0);
+
+                // 4. Position the hearts relative to this 3D anchor point
+                for (int i = 0; i < _hearts.Count; i++)
+                {
+                    // Center the hearts horizontally (e.g., for 3 hearts: -0.8, 0, +0.8)
+                    xOffset = (i - (_hearts.Count - 1) / 2.0f) * 0.8f;
+
+                    _hearts[i].World = Matrix.CreateScale(0.2f) *
+                                       Matrix.CreateRotationY(angle) *
+                                       Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
+                }
+            }
+            else
+            {
+                // If there's no minotaur, hide the hearts far away
+                for (int i = 0; i < _hearts.Count; i++)
+                {
+                    _hearts[i].World = Matrix.CreateTranslation(1000, 1000, 0);
+                }
             }
 
         }
@@ -306,10 +341,10 @@ namespace GameProject0
             }
             spriteBatch.DrawString(_spriteFont, $"Score: {_score}", new Vector2(10, 10), Color.White);
             spriteBatch.DrawString(_spriteFont, $"Player HP: {_playerSprite.Health}", new Vector2(10, 50), Color.White);
-            if (_minotaur != null && !_minotaur.IsRemoved)
-            {
-                spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
-            }
+            //if (_minotaur != null && !_minotaur.IsRemoved)
+            //{
+            //    spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
+            //}
 
             //string instructions = "E TO ATTACK   SPACE TO DODGE";
             //Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
@@ -323,13 +358,19 @@ namespace GameProject0
         public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
         {
             // Reset graphics device states for 3D rendering
-            // SpriteBatch changes these, so we must set them back
             graphicsDevice.BlendState = BlendState.Opaque;
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
             graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
-            // Draw hearts based on player health
-            for (int i = 0; i < _playerSprite.Health; i++)
+            // Determine how many hearts to draw based on Minotaur's health
+            int heartsToDraw = 0;
+            if (_minotaur != null && !_minotaur.IsRemoved)
+            {
+                heartsToDraw = _minotaur.Health;
+            }
+
+            // Draw the correct number of hearts
+            for (int i = 0; i < heartsToDraw; i++)
             {
                 if (i < _hearts.Count)
                 {
