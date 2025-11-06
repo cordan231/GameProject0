@@ -168,7 +168,8 @@ namespace GameProject0.Enemies
             {
                 SetState(MinotaurState.Dead);
             }
-            else
+            // ONLY set the Hurt state if the Minotaur is NOT attacking
+            else if (_currentState != MinotaurState.Attack)
             {
                 SetState(MinotaurState.Hurt);
             }

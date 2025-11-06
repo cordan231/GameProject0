@@ -261,9 +261,9 @@ namespace GameProject0
                 float pixelX = _minotaur.Position.X + _minotaur.Width / 2;
                 float pixelY = _minotaur.Position.Y + 30; 
 
-                // 2. Calculate the 3D camera's view size at Z=0 (based on Heart.cs camera)
+                // 2. Calculate the 3D camera's view size 
 
-                float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f); // 10 = Z-distance, (Pi / 8f) = FOV/2
+                float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f);
 
                 float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
 
@@ -275,7 +275,6 @@ namespace GameProject0
                 // 4. Position the hearts relative to this 3D anchor point
                 for (int i = 0; i < _hearts.Count; i++)
                 {
-                    // Center the hearts horizontally (e.g., for 3 hearts: -0.8, 0, +0.8)
                     xOffset = (i - (_hearts.Count - 1) / 2.0f) * 0.8f;
 
                     _hearts[i].World = Matrix.CreateScale(0.2f) *
