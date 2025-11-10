@@ -256,51 +256,24 @@ namespace GameProject0
 
         public void SetState(CurrentState state)
         {
-            if (_currentState == CurrentState.Dead) return;
+            if (_currentState == state) return; // If we are already in this state, do nothing.
+            if (_currentState == CurrentState.Dead) return; // Cannot leave Dead state
 
-            // --- FIX IS HERE ---
-            // Allow Idle and Running to "reset" themselves if the texture is wrong
-            if (state == CurrentState.Idle || state == CurrentState.Running)
+            // Prevent state changes while in an uninterruptible animation
+            if ((_currentState == CurrentState.Attacking || _currentState == CurrentState.Rolling || _currentState == CurrentState.Hurt) && _stateTimer > 0)
             {
-                if (_currentState == state)
+                // ...unless it's a "forceful" state change like dying
+                if (state != CurrentState.Dead)
                 {
-                    // State is the same, but check if texture is correct
-                    var expectedTexture = (state == CurrentState.Idle)
-                        ? (Game1.GunModeActive ? _gunIdleTexture : _idleTexture)
-                        : (Game1.GunModeActive ? _gunRunningTexture : _runningTexture);
-
-                    if (_currentTexture == expectedTexture)
-                    {
-                        return; // Nothing to do
-                    }
-
-                    // Texture is wrong! Update it but DON'T reset the animation
-                    _currentTexture = expectedTexture;
-                    if (state == CurrentState.Idle)
-                    {
-                        _totalFrames = Game1.GunModeActive ? 6 : 5;
-                    }
-                    else // Running
-                    {
-                        _totalFrames = 12;
-                    }
-                    if (_currentFrame >= _totalFrames) _currentFrame = 0; // Clamp frame
-                    return; // Texture fixed, animation preserved
+                    return;
                 }
             }
-            else
-            {
-                // For Attacking, Rolling, Hurt states, if state is same, do nothing
-                if (_currentState == state) return;
-            }
-            // --- END FIX ---
 
 
-            // If we get here, it's a NEW state. Reset animation.
             _currentState = state;
             _currentFrame = 0;
             _frameTimer = 0;
-            _stateTimer = 0;
+            _stateTimer = 0; // This timer is now used for animation locks
 
             switch (state)
             {
@@ -341,7 +314,7 @@ namespace GameProject0
                         _currentTexture = _attackTexture;
                         _totalFrames = 4;
                     }
-                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0; // Lock state for animation duration
                     break;
                 case CurrentState.Rolling:
                     if (Game1.GunModeActive)
@@ -354,7 +327,7 @@ namespace GameProject0
                         _currentTexture = _rollTexture;
                         _totalFrames = 9;
                     }
-                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0; // Lock state for animation duration
                     break;
                 case CurrentState.Hurt:
                     if (Game1.GunModeActive)
@@ -367,7 +340,7 @@ namespace GameProject0
                         _currentTexture = _hurtTexture;
                         _totalFrames = 3;
                     }
-                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0 * 2;
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0 * 2; // Lock state for animation duration
                     break;
                 case CurrentState.Dead:
                     if (Game1.GunModeActive)
