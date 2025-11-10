@@ -8,6 +8,7 @@ namespace GameProject0.Enemies
 {
     public enum MinotaurState
     {
+        WalkingIn,
         Idle,
         Walk,
         Hurt,
@@ -46,12 +47,18 @@ namespace GameProject0.Enemies
         private int FRAME_WIDTH = 128;
         private int FRAME_HEIGHT = 128;
         private double _animationFrameTime = 0.1;
-        private const double IDLE_DURATION = 1.5;
 
-        private double _attackTimer = 4.0;
+        // --- AI Variables ---
+        private double _attackCooldownTimer = 0;
+        private const double ATTACK_COOLDOWN = 3.0; // Set to 3 seconds per your request
+        private const float CHASE_SPEED = 100f;
+        private const float ATTACK_RANGE = 150f;
 
         public BoundingRectangle Bounds { get; private set; }
         public BoundingRectangle AttackBox { get; private set; }
+
+        private Vector2 _walkInTargetPosition;
+        private const float WALK_IN_SPEED = 150f;
 
         public MinotaurState CurrentState => _currentState;
 
@@ -83,45 +90,138 @@ namespace GameProject0.Enemies
             _idleTexture = content.Load<Texture2D>("minotaur_idle");
             _attackTexture = content.Load<Texture2D>("minotaur_attack");
 
-            SetState(MinotaurState.Walk);
+            SetState(MinotaurState.Idle);
         }
 
-        public void Update(GameTime gameTime, int screenWidth)
+        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition, Direction direction)
+        {
+            Position = spawnPosition;
+            _walkInTargetPosition = targetPosition;
+            Direction = direction;
+            SetState(MinotaurState.WalkingIn);
+        }
+
+        public void Update(GameTime gameTime, PlayerSprite player)
         {
             if (IsRemoved) return;
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (_hurtFlashTimer > 0)
             {
-                _hurtFlashTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                _hurtFlashTimer -= dt;
                 _color = _isFlashingWhite ? Color.White : Color.Red;
                 _isFlashingWhite = !_isFlashingWhite;
-                if (_hurtFlashTimer <= 0)
-                {
-                    _color = Color.White;
-                }
+                if (_hurtFlashTimer <= 0) _color = Color.White;
             }
 
-            if (_currentState != MinotaurState.Walk && _currentState != MinotaurState.Attack && _currentState != MinotaurState.Dead)
+            // Player distance check
+            float distance = float.MaxValue;
+            if (player != null && !player.IsDead)
             {
-                _stateTimer -= gameTime.ElapsedGameTime.TotalSeconds;
-                if (_stateTimer <= 0)
-                {
-                    SetState(MinotaurState.Walk);
-                }
+                distance = Vector2.Distance(player.Bounds.Center, Bounds.Center);
             }
 
-            if (_currentState == MinotaurState.Walk)
+            switch (_currentState)
             {
-                _attackTimer -= gameTime.ElapsedGameTime.TotalSeconds;
-                if (_attackTimer <= 0)
-                {
-                    SetState(MinotaurState.Attack);
-                    _attackTimer = 4.0;
-                }
+                case MinotaurState.WalkingIn:
+                    // Rule 1: Walk in
+                    if (Direction == Direction.Left)
+                    {
+                        _position.X -= WALK_IN_SPEED * dt;
+                        if (_position.X <= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(MinotaurState.Walk); // Start chasing
+                        }
+                    }
+                    else // Direction is Right
+                    {
+                        _position.X += WALK_IN_SPEED * dt;
+                        if (_position.X >= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(MinotaurState.Walk); // Start chasing
+                        }
+                    }
+                    Position = _position;
+                    break;
 
+                case MinotaurState.Idle: // This is the 3-second "attack cooldown" state
+                    if (_attackCooldownTimer > 0)
+                    {
+                        _attackCooldownTimer -= dt;
+                    }
+
+                    if (_attackCooldownTimer <= 0)
+                    {
+                        // Cooldown is over.
+                        // Rule 5: If player is close, attack again.
+                        if (distance < ATTACK_RANGE)
+                        {
+                            SetState(MinotaurState.Attack);
+                        }
+                        else
+                        {
+                            // Player is not close, resume chasing.
+                            SetState(MinotaurState.Walk);
+                        }
+                    }
+                    // If cooldown is still active, we just stay in Idle state.
+                    // Rule 4 (attacked during idle) is handled in TakeDamage.
+                    break;
+
+                case MinotaurState.Walk: // This is the "Chase" state
+                    if (player == null || player.IsDead)
+                    {
+                        SetState(MinotaurState.Idle); // No player, go idle
+                        _attackCooldownTimer = 0; // Clear cooldown
+                        break;
+                    }
+
+                    // Rule 2: Check for attack
+                    if (distance < ATTACK_RANGE)
+                    {
+                        Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right;
+                        SetState(MinotaurState.Attack);
+                    }
+                    else // Not in range, keep chasing
+                    {
+                        if (player.Bounds.Center.X < Bounds.Center.X)
+                        {
+                            Direction = Direction.Left;
+                            _position.X -= CHASE_SPEED * dt;
+                        }
+                        else
+                        {
+                            Direction = Direction.Right;
+                            _position.X += CHASE_SPEED * dt;
+                        }
+                        Position = _position;
+                    }
+                    break;
+
+                case MinotaurState.Hurt:
+                    // Flinch for a short time
+                    _stateTimer -= dt;
+                    if (_stateTimer <= 0)
+                    {
+                        // After flinching, go into cooldown (Idle)
+                        SetState(MinotaurState.Idle);
+                        _attackCooldownTimer = ATTACK_COOLDOWN;
+                    }
+                    break;
+
+                case MinotaurState.Attack:
+                    // Animation completion is handled below
+                    break;
+
+                case MinotaurState.Dead:
+                    // Rule 6: Animation completion is handled below
+                    break;
             }
 
-            _animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            // Animation logic
+            _animationTimer += dt;
             if (_animationTimer > _animationFrameTime)
             {
                 _currentFrame++;
@@ -134,7 +234,9 @@ namespace GameProject0.Enemies
                     }
                     else if (_currentState == MinotaurState.Attack)
                     {
-                        SetState(MinotaurState.Walk);
+                        // Rule 3: After attacking, idle for 3 seconds
+                        SetState(MinotaurState.Idle);
+                        _attackCooldownTimer = ATTACK_COOLDOWN;
                     }
                     else
                     {
@@ -156,7 +258,7 @@ namespace GameProject0.Enemies
             spriteBatch.Draw(_currentTexture, Position, sourceRect, _color, 0f, Vector2.Zero, Scale, effects, 0f);
         }
 
-        public void TakeDamage(int damage)
+        public void TakeDamage(int damage, PlayerSprite player)
         {
             if (_currentState == MinotaurState.Dead) return;
 
@@ -167,8 +269,22 @@ namespace GameProject0.Enemies
             if (Health <= 0)
             {
                 SetState(MinotaurState.Dead);
+                return; // Stop further logic if dead
             }
-            // ONLY set the Hurt state if the Minotaur is NOT attacking
+
+            // Rule 4: If attacked during Idle (cooldown), immediately attack.
+            if (_currentState == MinotaurState.Idle)
+            {
+                // Set direction TOWARDS player just before attacking
+                if (player != null)
+                {
+                    Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right;
+                }
+                // --- END FIX ---
+                SetState(MinotaurState.Attack);
+                // The cooldown will be reset to 3.0 when this new attack animation finishes (handled in Update)
+            }
+            // If attacked during any other non-attack state (like Walk)
             else if (_currentState != MinotaurState.Attack)
             {
                 SetState(MinotaurState.Hurt);
@@ -179,7 +295,11 @@ namespace GameProject0.Enemies
         {
             if (_currentState == state) return;
             if (_currentState == MinotaurState.Dead) return;
-            if (_currentState == MinotaurState.Hurt && _stateTimer > 0 && state != MinotaurState.Dead) return;
+            // Allow Hurt to interrupt Walk/Idle
+            if (_currentState == MinotaurState.Hurt && _stateTimer > 0 && state != MinotaurState.Dead && state != MinotaurState.Attack) return;
+            // Allow Attack to interrupt anything except Dead or Hurt
+            if (state == MinotaurState.Attack && (_currentState == MinotaurState.Hurt || _currentState == MinotaurState.Dead)) return;
+
 
             _currentState = state;
             _currentFrame = 0;
@@ -187,11 +307,17 @@ namespace GameProject0.Enemies
 
             switch (state)
             {
+                case MinotaurState.WalkingIn:
+                    _currentTexture = _walkTexture;
+                    _totalFrames = 12;
+                    _color = Color.White;
+                    _animationFrameTime = 0.1;
+                    break;
                 case MinotaurState.Idle:
                     _currentTexture = _idleTexture;
                     _totalFrames = 10;
-                    _stateTimer = IDLE_DURATION;
                     _animationFrameTime = 0.1;
+                    // _stateTimer is not used here; _attackCooldownTimer is
                     break;
                 case MinotaurState.Walk:
                     _currentTexture = _walkTexture;
@@ -202,8 +328,8 @@ namespace GameProject0.Enemies
                 case MinotaurState.Hurt:
                     _currentTexture = _hurtTexture;
                     _totalFrames = 3;
-                    _stateTimer = _animationFrameTime * _totalFrames * 2;
                     _animationFrameTime = 0.1;
+                    _stateTimer = _animationFrameTime * _totalFrames * 2; // Short flinch duration
                     break;
                 case MinotaurState.Dead:
                     _currentTexture = _deadTexture;

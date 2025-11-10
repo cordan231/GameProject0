@@ -10,6 +10,7 @@ namespace GameProject0.Enemies
 {
     public enum SkeletonState
     {
+        WalkingIn,
         Idle,
         Attack1,
         Attack2,
@@ -30,6 +31,7 @@ namespace GameProject0.Enemies
     public class Skeleton
     {
         private Texture2D _idleTexture;
+        private Texture2D _walkTexture;
         private Texture2D _attack1Texture;
         private Texture2D _attack2Texture;
         private Texture2D _evasionTexture;
@@ -63,6 +65,7 @@ namespace GameProject0.Enemies
 
         private double _idleTimer = 2.0;
         private double _postAttackTimer = 0;
+        private bool _postEvasionAttack = false; // Flag to track post-evasion attack
 
         public BoundingRectangle Bounds { get; private set; }
         public List<Arrow> Arrows { get; private set; }
@@ -71,6 +74,9 @@ namespace GameProject0.Enemies
         private const float EVASION_SPEED = 700f;
         private List<AfterImageSnapshot> _afterImages;
         private double _afterImageTimer;
+
+        private Vector2 _walkInTargetPosition;
+        private const float WALK_IN_SPEED = 200f;
 
         public SkeletonState CurrentState => _currentState;
 
@@ -106,6 +112,7 @@ namespace GameProject0.Enemies
         public void LoadContent(ContentManager content)
         {
             _idleTexture = content.Load<Texture2D>("skeleton_idle");
+            _walkTexture = content.Load<Texture2D>("skeleton_walk");
             _attack1Texture = content.Load<Texture2D>("skeleton_shot1");
             _attack2Texture = content.Load<Texture2D>("skeleton_shot2");
             _evasionTexture = content.Load<Texture2D>("skeleton_evasion");
@@ -113,7 +120,16 @@ namespace GameProject0.Enemies
             _deadTexture = content.Load<Texture2D>("skeleton_dead");
             _arrowTexture = content.Load<Texture2D>("arrow_sprite");
 
+            // Set a default state to ensure _currentTexture is never null
             SetState(SkeletonState.Idle);
+        }
+
+        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition, Direction direction)
+        {
+            Position = spawnPosition;
+            _walkInTargetPosition = targetPosition;
+            Direction = direction;
+            SetState(SkeletonState.WalkingIn);
         }
 
         public void Update(GameTime gameTime, Viewport viewport)
@@ -131,6 +147,28 @@ namespace GameProject0.Enemies
 
             switch (_currentState)
             {
+                case SkeletonState.WalkingIn:
+                    if (Direction == Direction.Left)
+                    {
+                        _position.X -= WALK_IN_SPEED * dt;
+                        if (_position.X <= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(SkeletonState.Idle);
+                        }
+                    }
+                    else // Direction is Right
+                    {
+                        _position.X += WALK_IN_SPEED * dt;
+                        if (_position.X >= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(SkeletonState.Idle);
+                        }
+                    }
+                    Position = _position;
+                    break;
+
                 case SkeletonState.Idle:
                     _idleTimer -= dt;
                     if (_idleTimer <= 0 && _postAttackTimer <= 0)
@@ -155,7 +193,17 @@ namespace GameProject0.Enemies
                     {
                         _lastAttackState = _currentState;
                         SpawnArrow(_lastAttackState);
-                        _postAttackTimer = 3.0;
+
+                        if (_postEvasionAttack)
+                        {
+                            _idleTimer = 3.0; // Start 3-second idle
+                            _postAttackTimer = 0; // Don't evade again
+                            _postEvasionAttack = false;
+                        }
+                        else
+                        {
+                            _postAttackTimer = 3.0; // Normal 3-second delay before evading
+                        }
                         SetState(SkeletonState.Idle);
                     }
                     break;
@@ -170,7 +218,9 @@ namespace GameProject0.Enemies
                         {
                             _position.X = _evasionTargetX;
                             Direction = Direction.Left; // Arrived at right, turn left
-                            SetState(SkeletonState.Idle);
+                            // --- FIX ---
+                            SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
+                            // --- END FIX ---
                         }
                     }
                     else // Target is to the left
@@ -180,7 +230,7 @@ namespace GameProject0.Enemies
                         {
                             _position.X = _evasionTargetX;
                             Direction = Direction.Right; // Arrived at left, turn right
-                            SetState(SkeletonState.Idle);
+                            SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                         }
                     }
                     Position = _position;
@@ -209,7 +259,7 @@ namespace GameProject0.Enemies
                     {
                         _position.X = _evasionTargetX;
                         Direction = (_evasionTargetX > 0) ? Direction.Left : Direction.Right;
-                        SetState(SkeletonState.Idle);
+                        SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                     }
                     break;
 
@@ -333,11 +383,16 @@ namespace GameProject0.Enemies
 
             switch (state)
             {
+                case SkeletonState.WalkingIn:
+                    _currentTexture = _walkTexture;
+                    _totalFrames = 8;
+                    _animationFrameTime = 0.1;
+                    break;
                 case SkeletonState.Idle:
                     _currentTexture = _idleTexture;
                     _totalFrames = 7;
                     _animationFrameTime = 0.15;
-                    _idleTimer = 2.0;
+                    _idleTimer = 3.0;
                     break;
                 case SkeletonState.Attack1:
                     _currentTexture = _attack1Texture;
@@ -357,6 +412,7 @@ namespace GameProject0.Enemies
                     _animationFrameTime = 0.1;
                     _stateTimer = 1.0;
                     _afterImages.Clear();
+                    _postEvasionAttack = true;
                     break;
                 case SkeletonState.Hurt:
                     _currentTexture = _hurtTexture;

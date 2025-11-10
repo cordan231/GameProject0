@@ -32,8 +32,7 @@ namespace GameProject0
         private bool _attackCooldown = false;
         private double _attackCooldownTimer = 0;
 
-        // private double _minotaurSpawnTimer; // Disabled for Skeleton testing
-        // private const double MINOTAUR_SPAWN_TIME = 10.0;
+        private SpawnState _nextSpawn = SpawnState.Minotaur;
 
         private const float GROUND_Y = 3 * 64 * 2.0f;
 
@@ -51,7 +50,6 @@ namespace GameProject0
             _coins = new List<Coin>();
             _random = new Random();
             _score = 0;
-            // _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME; // Disabled
             _minotaurHearts = new List<Heart>();
             _playerHearts = new List<Heart>();
             _skeletonHearts = new List<Heart>();
@@ -79,21 +77,15 @@ namespace GameProject0
             );
 
             // --- Hearts ---
-            _minotaurHearts.Clear();
             _playerHearts.Clear();
-            _skeletonHearts.Clear();
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < _playerSprite.Health; i++)
             {
-                _minotaurHearts.Add(new Heart(Game1.Instance, Color.Red));
                 _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
             }
-            for (int i = 0; i < 2; i++)
-            {
-                _skeletonHearts.Add(new Heart(Game1.Instance, Color.Green));
-            }
+            _skeletonHearts.Clear();
 
-            // --- Spawn Skeleton for Testing ---
-            SpawnSkeleton();
+            // --- Spawn First Enemy ---
+            SpawnMinotaur();
         }
 
         public void Update(GameTime gameTime, InputManager inputManager)
@@ -134,11 +126,28 @@ namespace GameProject0
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _playerSprite.Update(gameTime);
 
-            // --- Enemy Updates ---
-            _minotaur?.Update(gameTime, viewport.Width); // Update if minotaur exists
-            _skeleton?.Update(gameTime, viewport); // Update if skeleton exists
+            // --- Enemy Updates & Spawning ---
+            if (_minotaur != null && _minotaur.IsRemoved)
+            {
+                _minotaur = null;
+                if (_nextSpawn == SpawnState.Skeleton)
+                {
+                    _score += 25;
+                    SpawnSkeleton();
+                }
+            }
+            if (_skeleton != null && _skeleton.IsRemoved)
+            {
+                _skeleton = null;
+                if (_nextSpawn == SpawnState.Minotaur)
+                {
+                    _score += 25;
+                    SpawnMinotaur();
+                }
+            }
 
-            // HandleMinotaurSpawning(gameTime); // Disabled for testing
+            _minotaur?.Update(gameTime, _playerSprite); // Update if minotaur exists
+            _skeleton?.Update(gameTime, viewport); // Update if skeleton exists
 
             // --- Player Input ---
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
@@ -161,7 +170,7 @@ namespace GameProject0
                 {
                     _attackCooldown = true;
                     _attackCooldownTimer = 0.5;
-                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1);
+                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1, _playerSprite); // <-- MODIFIED: Pass _playerSprite
                     Game1.Instance.BloodSplatters.Splatter(_minotaur.Bounds.Center);
                 }
                 if (_minotaur.IsAttackHitboxActive && _minotaur.AttackBox.CollidesWith(_playerSprite.Bounds))
@@ -310,13 +319,70 @@ namespace GameProject0
 
         }
 
+        private void SpawnMinotaur()
+        {
+            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+            _minotaur = new Minotaur();
+            _minotaur.LoadContent(_content);
+
+            Vector2 spawnPos;
+            Vector2 targetPos;
+            Direction walkInDir;
+
+            if (_random.Next(2) == 0) // Spawn Right
+            {
+                spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _minotaur.Height);
+                targetPos = new Vector2(viewport.Width - _minotaur.Width, GROUND_Y - _minotaur.Height);
+                walkInDir = Direction.Left;
+            }
+            else // Spawn Left
+            {
+                spawnPos = new Vector2(-100 - _minotaur.Width, GROUND_Y - _minotaur.Height);
+                targetPos = new Vector2(0, GROUND_Y - _minotaur.Height);
+                walkInDir = Direction.Right;
+            }
+
+            _minotaur.WalkIn(spawnPos, targetPos, walkInDir);
+            _nextSpawn = SpawnState.Skeleton;
+
+            _minotaurHearts.Clear();
+            for (int i = 0; i < _minotaur.Health; i++)
+            {
+                _minotaurHearts.Add(new Heart(Game1.Instance, Color.Red));
+            }
+        }
+
         private void SpawnSkeleton()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
             _skeleton = new Skeleton();
             _skeleton.LoadContent(_content);
-            _skeleton.Position = new Vector2(viewport.Width - _skeleton.Width, GROUND_Y - _skeleton.Height);
-            _skeleton.Direction = Direction.Left;
+
+            Vector2 spawnPos;
+            Vector2 targetPos;
+            Direction walkInDir;
+
+            if (_random.Next(2) == 0) // Spawn Right
+            {
+                spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _skeleton.Height);
+                targetPos = new Vector2(viewport.Width - _skeleton.Width, GROUND_Y - _skeleton.Height);
+                walkInDir = Direction.Left;
+            }
+            else // Spawn Left
+            {
+                spawnPos = new Vector2(-100 - _skeleton.Width, GROUND_Y - _skeleton.Height);
+                targetPos = new Vector2(0, GROUND_Y - _skeleton.Height);
+                walkInDir = Direction.Right;
+            }
+
+            _skeleton.WalkIn(spawnPos, targetPos, walkInDir);
+            _nextSpawn = SpawnState.Minotaur;
+
+            _skeletonHearts.Clear();
+            for (int i = 0; i < _skeleton.Health; i++)
+            {
+                _skeletonHearts.Add(new Heart(Game1.Instance, Color.Green));
+            }
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
@@ -417,7 +483,8 @@ namespace GameProject0
                     Health = _skeleton.Health,
                     Direction = _skeleton.Direction,
                     State = _skeleton.CurrentState
-                }
+                },
+                NextSpawn = _nextSpawn
             };
 
             SaveManager.Save(state);
@@ -434,6 +501,7 @@ namespace GameProject0
             }
 
             _score = state.Score;
+            _nextSpawn = state.NextSpawn;
 
             _playerSprite.SetHealth(state.Player.Health);
             _playerSprite.SetState(state.Player.State);
@@ -471,6 +539,30 @@ namespace GameProject0
                 _skeleton.Position = state.Skeleton.Position.ToVector2();
             }
             else _skeleton = null;
+
+            // --- Reload Hearts ---
+            _playerHearts.Clear();
+            for (int i = 0; i < _playerSprite.Health; i++)
+            {
+                _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
+            }
+            _minotaurHearts.Clear();
+            if (_minotaur != null)
+            {
+                for (int i = 0; i < _minotaur.Health; i++)
+                {
+                    _minotaurHearts.Add(new Heart(Game1.Instance, Color.Red));
+                }
+            }
+            _skeletonHearts.Clear();
+            if (_skeleton != null)
+            {
+                for (int i = 0; i < _skeleton.Health; i++)
+                {
+                    _skeletonHearts.Add(new Heart(Game1.Instance, Color.Green));
+                }
+            }
+
 
             Console.WriteLine("Game Loaded!");
         }
