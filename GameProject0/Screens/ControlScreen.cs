@@ -34,6 +34,10 @@ namespace GameProject0
             {
                 _screenManager.LoadScreen(new TitleScreen());
             }
+            if (inputManager.GunModeToggle)
+            {
+                Game1.GunModeActive = !Game1.GunModeActive;
+            }
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)

@@ -18,6 +18,8 @@ namespace GameProject0
         public static Game1 Instance { get; private set; }
         public BloodSplatterParticleSystem BloodSplatters { get; private set; }
 
+        public static bool GunModeActive { get; set; } = false;
+
         private float _screenShakeTimer = 0;
         private float _screenShakeMagnitude = 0;
         private Random _random = new Random();

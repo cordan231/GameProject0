@@ -156,11 +156,11 @@ namespace GameProject0.Enemies
             spriteBatch.Draw(_currentTexture, Position, sourceRect, _color, 0f, Vector2.Zero, Scale, effects, 0f);
         }
 
-        public void TakeDamage()
+        public void TakeDamage(int damage)
         {
             if (_currentState == MinotaurState.Dead) return;
 
-            Health--;
+            Health -= damage;
             _hurtFlashTimer = 0.2;
             _isFlashingWhite = true;
 

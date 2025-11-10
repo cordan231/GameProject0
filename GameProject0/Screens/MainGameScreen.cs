@@ -24,6 +24,7 @@ namespace GameProject0
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
         private SoundEffect _coinPickup;
+        private Texture2D _whitePixelTexture;
 
         private Minotaur _minotaur;
         private bool _attackCooldown = false;
@@ -60,6 +61,9 @@ namespace GameProject0
             _playerSprite.LoadContent(_content);
             _spriteFont = _content.Load<SpriteFont>("vcr");
             _coinPickup = _content.Load<SoundEffect>("pickup-coin");
+
+            _whitePixelTexture = new Texture2D(_graphicsDeviceManager.GraphicsDevice, 1, 1);
+            _whitePixelTexture.SetData(new[] { Color.White });
 
             _playerSprite.Scale = 1.5f;
 
@@ -188,7 +192,14 @@ namespace GameProject0
                 {
                     _attackCooldown = true;
                     _attackCooldownTimer = 0.5;
-                    _minotaur.TakeDamage();
+                    if (Game1.GunModeActive)
+                    {
+                        _minotaur.TakeDamage(100); // 1-hit KO
+                    }
+                    else
+                    {
+                        _minotaur.TakeDamage(1); // Normal damage
+                    }
                     Game1.Instance.BloodSplatters.Splatter(_minotaur.Bounds.Center);
                 }
 
@@ -220,9 +231,9 @@ namespace GameProject0
 
             // Clamp player position to screen
             float scale = _playerSprite.Scale;
-            float frameWidth = 128 * scale; // This is _playerSprite.Width
-            float boxWidth = frameWidth * 0.35f; // From PlayerSprite.cs
-            float xOffset = (frameWidth - boxWidth) / 2; // From PlayerSprite.cs
+            float frameWidth = 128 * scale;
+            float boxWidth = frameWidth * 0.35f;
+            float xOffset = (frameWidth - boxWidth) / 2;
 
             float minX = -xOffset;
             float maxX = viewport.Width - xOffset - boxWidth;
@@ -265,7 +276,7 @@ namespace GameProject0
             {
                 // 1. Get the Minotaur's 2D position 
                 float pixelX = _minotaur.Position.X + _minotaur.Width / 2;
-                float pixelY = _minotaur.Position.Y + 30; 
+                float pixelY = _minotaur.Position.Y + 30;
 
                 // 2. Calculate the 3D camera's view size 
 
@@ -305,7 +316,7 @@ namespace GameProject0
 
             for (int i = 0; i < _playerHearts.Count; i++)
             {
-                // We subtract 'i' to build the hearts from right-to-left
+                
                 xOffset = rightEdgeOfView - (i * playerHeartSpacing);
 
                 _playerHearts[i].World = Matrix.CreateScale(playerHeartScale) *
@@ -360,20 +371,31 @@ namespace GameProject0
             {
                 coin.Draw(spriteBatch);
             }
-            spriteBatch.DrawString(_spriteFont, $"Score: {_score}", new Vector2(10, 10), Color.White);
-            //spriteBatch.DrawString(_spriteFont, $"Player HP: {_playerSprite.Health}", new Vector2(10, 50), Color.White);
-            //if (_minotaur != null && !_minotaur.IsRemoved)
-            //{
-            //    spriteBatch.DrawString(_spriteFont, $"Minotaur HP: {_minotaur.Health}", new Vector2(10, 30), Color.White);
-            //}
 
-            //string instructions = "E TO ATTACK   SPACE TO DODGE";
-            //Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
-            //Vector2 instructionsPosition = new Vector2(
-            //    viewport.Width - instructionsSize.X - 10,
-            //    viewport.Height - instructionsSize.Y - 10
-            //);
-            //spriteBatch.DrawString(_spriteFont, instructions, instructionsPosition, Color.White);
+            // --- Draw Score Box ---
+            string scoreText = $"Score: {_score}";
+            Vector2 scoreTextSize = _spriteFont.MeasureString(scoreText);
+            float padding = 10f;
+            float outlineThickness = 2f;
+            Vector2 textPosition = new Vector2(10, 10);
+
+            Rectangle backgroundRect = new Rectangle(
+                (int)(textPosition.X - padding),
+                (int)(textPosition.Y - padding),
+                (int)(scoreTextSize.X + padding * 2),
+                (int)(scoreTextSize.Y + padding * 2)
+            );
+
+            Rectangle outlineRect = new Rectangle(
+                backgroundRect.X - (int)outlineThickness,
+                backgroundRect.Y - (int)outlineThickness,
+                backgroundRect.Width + (int)(outlineThickness * 2),
+                backgroundRect.Height + (int)(outlineThickness * 2)
+            );
+
+            spriteBatch.Draw(_whitePixelTexture, outlineRect, Color.White);
+            spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139));
+            spriteBatch.DrawString(_spriteFont, scoreText, textPosition, Color.White);
         }
 
         public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)

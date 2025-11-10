@@ -30,6 +30,13 @@ namespace GameProject0
         private Texture2D _hurtTexture;
         private Texture2D _deathTexture;
 
+        private Texture2D _gunIdleTexture;
+        private Texture2D _gunRunningTexture;
+        private Texture2D _gunAttackTexture;
+        private Texture2D _gunHurtTexture;
+        private Texture2D _gunDeadTexture;
+        private Texture2D _gunRollTexture;
+
 
         private Vector2 _position;
         public Direction _currentDirection;
@@ -99,12 +106,20 @@ namespace GameProject0
             _hurtTexture = content.Load<Texture2D>("player_hurt");
             _deathTexture = content.Load<Texture2D>("player_death");
 
+            _gunIdleTexture = content.Load<Texture2D>("gun_idle");
+            _gunRunningTexture = content.Load<Texture2D>("gun_run");
+            _gunAttackTexture = content.Load<Texture2D>("gun_standing_shooting");
+            _gunHurtTexture = content.Load<Texture2D>("gun_hurt");
+            _gunDeadTexture = content.Load<Texture2D>("gun_dead");
+            _gunRollTexture = content.Load<Texture2D>("gun_roll");
+
             _currentState = CurrentState.Idle;
             _currentTexture = _idleTexture;
             _totalFrames = 5;
             _currentFrame = 0;
             _frameTimer = 0;
             _currentDirection = Direction.Right;
+            SetState(CurrentState.Idle);
         }
 
         public void Update(GameTime gameTime)
@@ -139,7 +154,14 @@ namespace GameProject0
 
             if (_currentState == CurrentState.Rolling)
             {
-                IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
+                if (Game1.GunModeActive)
+                {
+                    IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
+                }
+                else
+                {
+                    IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
+                }
 
             }
             else
@@ -179,7 +201,7 @@ namespace GameProject0
             if (IsInvincible || _currentState == CurrentState.Hurt || _currentState == CurrentState.Dead || _hurtCooldown > 0) return;
 
             Health--;
-            _hurtCooldown = 1.0; // 1 second of invincibility after getting hit
+            _hurtCooldown = 1.0;
             Game1.Instance.BloodSplatters.Splatter(Bounds.Center);
 
             if (Health <= 0)
@@ -197,19 +219,38 @@ namespace GameProject0
 
         private void UpdateAttackBox()
         {
-            float attackWidth = 60 * Scale;
-            float attackHeight = 30 * Scale;
-            float yOffset = 40 * Scale;
-
-            if (_currentDirection == Direction.Right)
+            if (Game1.GunModeActive)
             {
-                float xOffset = 50 * Scale;
-                AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+                float fireRange = 5000f;
+                float fireHeight = 20f;
+                float yOffset = 40 * Scale;
+                if (_currentDirection == Direction.Right)
+                {
+                    float xOffset = 50 * Scale;
+                    AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, fireRange, fireHeight);
+                }
+                else
+                {
+                    float xOffset = (FRAME_WIDTH * Scale) - (50 * Scale);
+                    AttackBox = new BoundingRectangle(Position.X + xOffset - fireRange, Position.Y + yOffset, fireRange, fireHeight);
+                }
             }
             else
             {
-                float xOffset = (FRAME_WIDTH * Scale) - (50 * Scale) - attackWidth;
-                AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+                float attackWidth = 60 * Scale;
+                float attackHeight = 30 * Scale;
+                float yOffset = 40 * Scale;
+
+                if (_currentDirection == Direction.Right)
+                {
+                    float xOffset = 50 * Scale;
+                    AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+                }
+                else
+                {
+                    float xOffset = (FRAME_WIDTH * Scale) - (50 * Scale) - attackWidth;
+                    AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
+                }
             }
         }
 
@@ -226,32 +267,80 @@ namespace GameProject0
             {
                 case CurrentState.Idle:
                     KnockbackVelocity = Vector2.Zero;
-                    _currentTexture = _idleTexture;
-                    _totalFrames = 5;
+                    if (Game1.GunModeActive)
+                    {
+                        _currentTexture = _gunIdleTexture;
+                        _totalFrames = 6;
+                    }
+                    else
+                    {
+                        _currentTexture = _idleTexture;
+                        _totalFrames = 5;
+                    }
                     break;
                 case CurrentState.Running:
                     KnockbackVelocity = Vector2.Zero;
-                    _currentTexture = _runningTexture;
-                    _totalFrames = 12;
+                    if (Game1.GunModeActive)
+                    {
+                        _currentTexture = _gunRunningTexture;
+                        _totalFrames = 12;
+                    }
+                    else
+                    {
+                        _currentTexture = _runningTexture;
+                        _totalFrames = 12;
+                    }
                     break;
                 case CurrentState.Attacking:
-                    _currentTexture = _attackTexture;
-                    _totalFrames = 4;
+                    if (Game1.GunModeActive)
+                    {
+                        _currentTexture = _gunAttackTexture;
+                        _totalFrames = 4;
+                    }
+                    else
+                    {
+                        _currentTexture = _attackTexture;
+                        _totalFrames = 4;
+                    }
                     _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
                     break;
                 case CurrentState.Rolling:
-                    _currentTexture = _rollTexture;
-                    _totalFrames = 9;
+                    if (Game1.GunModeActive)
+                    {
+                        _currentTexture = _gunRollTexture;
+                        _totalFrames = 8;
+                    }
+                    else
+                    {
+                        _currentTexture = _rollTexture;
+                        _totalFrames = 9;
+                    }
                     _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
                     break;
                 case CurrentState.Hurt:
-                    _currentTexture = _hurtTexture;
-                    _totalFrames = 3;
+                    if (Game1.GunModeActive)
+                    {
+                        _currentTexture = _gunHurtTexture;
+                        _totalFrames = 4;
+                    }
+                    else
+                    {
+                        _currentTexture = _hurtTexture;
+                        _totalFrames = 3;
+                    }
                     _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0 * 2;
                     break;
                 case CurrentState.Dead:
-                    _currentTexture = _deathTexture;
-                    _totalFrames = 5;
+                    if (Game1.GunModeActive)
+                    {
+                        _currentTexture = _gunDeadTexture;
+                        _totalFrames = 5;
+                    }
+                    else
+                    {
+                        _currentTexture = _deathTexture;
+                        _totalFrames = 5;
+                    }
                     break;
             }
         }

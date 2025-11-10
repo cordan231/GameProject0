@@ -18,6 +18,8 @@ namespace GameProject0
         public bool Save { get; private set; } = false;
         public bool Load { get; private set; } = false;
 
+        public bool GunModeToggle { get; private set; } = false;
+
         public void Update(GameTime gameTime)
         {
             _priorKeyboardState = _currentKeyboardState;
@@ -30,6 +32,7 @@ namespace GameProject0
             Roll = false;
             Save = false;
             Load = false;
+            GunModeToggle = false;
 
             if (_currentKeyboardState.IsKeyDown(Keys.Left) || _currentKeyboardState.IsKeyDown(Keys.A))
             {
@@ -77,6 +80,12 @@ namespace GameProject0
             {
                 Load = true;
             }
+
+            if (_currentKeyboardState.IsKeyDown(Keys.C) && _priorKeyboardState.IsKeyUp(Keys.C))
+            {
+                GunModeToggle = true;
+            }
+
         }
     }
 }
