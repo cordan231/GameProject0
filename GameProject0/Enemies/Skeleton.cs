@@ -10,6 +10,7 @@ namespace GameProject0.Enemies
 {
     public enum SkeletonState
     {
+        WalkingIn,
         Idle,
         Attack1,
         Attack2,
@@ -30,6 +31,7 @@ namespace GameProject0.Enemies
     public class Skeleton
     {
         private Texture2D _idleTexture;
+        private Texture2D _walkTexture;
         private Texture2D _attack1Texture;
         private Texture2D _attack2Texture;
         private Texture2D _evasionTexture;
@@ -72,6 +74,9 @@ namespace GameProject0.Enemies
         private List<AfterImageSnapshot> _afterImages;
         private double _afterImageTimer;
 
+        private Vector2 _walkInTargetPosition;
+        private const float WALK_IN_SPEED = 200f;
+
         public SkeletonState CurrentState => _currentState;
 
         public Vector2 Position
@@ -106,6 +111,7 @@ namespace GameProject0.Enemies
         public void LoadContent(ContentManager content)
         {
             _idleTexture = content.Load<Texture2D>("skeleton_idle");
+            _walkTexture = content.Load<Texture2D>("skeleton_walk");
             _attack1Texture = content.Load<Texture2D>("skeleton_shot1");
             _attack2Texture = content.Load<Texture2D>("skeleton_shot2");
             _evasionTexture = content.Load<Texture2D>("skeleton_evasion");
@@ -113,7 +119,16 @@ namespace GameProject0.Enemies
             _deadTexture = content.Load<Texture2D>("skeleton_dead");
             _arrowTexture = content.Load<Texture2D>("arrow_sprite");
 
+            // Set a default state to ensure _currentTexture is never null
             SetState(SkeletonState.Idle);
+        }
+
+        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition)
+        {
+            Position = spawnPosition;
+            _walkInTargetPosition = targetPosition;
+            Direction = Direction.Left;
+            SetState(SkeletonState.WalkingIn);
         }
 
         public void Update(GameTime gameTime, Viewport viewport)
@@ -131,6 +146,16 @@ namespace GameProject0.Enemies
 
             switch (_currentState)
             {
+                case SkeletonState.WalkingIn:
+                    _position.X -= WALK_IN_SPEED * dt;
+                    if (_position.X <= _walkInTargetPosition.X)
+                    {
+                        _position.X = _walkInTargetPosition.X;
+                        SetState(SkeletonState.Idle);
+                    }
+                    Position = _position;
+                    break;
+
                 case SkeletonState.Idle:
                     _idleTimer -= dt;
                     if (_idleTimer <= 0 && _postAttackTimer <= 0)
@@ -333,6 +358,11 @@ namespace GameProject0.Enemies
 
             switch (state)
             {
+                case SkeletonState.WalkingIn:
+                    _currentTexture = _walkTexture;
+                    _totalFrames = 8;
+                    _animationFrameTime = 0.1;
+                    break;
                 case SkeletonState.Idle:
                     _currentTexture = _idleTexture;
                     _totalFrames = 7;

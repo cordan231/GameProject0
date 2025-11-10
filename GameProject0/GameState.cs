@@ -5,6 +5,11 @@ using GameProject0.Enemies;
 namespace GameProject0
 {
     /// <summary>
+    /// Tracks which enemy type should be spawned next.
+    /// </summary>
+    public enum SpawnState { Minotaur, Skeleton, None }
+
+    /// <summary>
     /// A simple serializable class to store X,Y data
     /// </summary>
     public class VectorData
@@ -63,6 +68,7 @@ namespace GameProject0
         public MinotaurData Minotaur { get; set; }
         public SkeletonData Skeleton { get; set; }
         public List<VectorData> CoinPositions { get; set; }
+        public SpawnState NextSpawn { get; set; }
 
         public GameState()
         {
@@ -70,6 +76,7 @@ namespace GameProject0
             Player = new PlayerData();
             Minotaur = new MinotaurData();
             Skeleton = new SkeletonData();
+            NextSpawn = SpawnState.Minotaur;
         }
     }
 }
