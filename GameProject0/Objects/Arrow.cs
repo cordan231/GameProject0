@@ -45,7 +45,7 @@ namespace GameProject0.Objects
             Position += _velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
             UpdateBounds();
 
-            if (Position.X > viewport.Width || Position.X < -Bounds.Width)
+            if (Position.X > viewport.Width + 100 || Position.X < -Bounds.Width - 100)
             {
                 IsRemoved = true;
             }

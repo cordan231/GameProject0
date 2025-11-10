@@ -274,7 +274,7 @@ namespace GameProject0
             if (_skeleton != null && !_skeleton.IsRemoved)
             {
                 float pixelX = _skeleton.Position.X + _skeleton.Width / 2;
-                float pixelY = _skeleton.Position.Y + 30;
+                float pixelY = _skeleton.Position.Y + 80;
                 float worldX = (pixelX - viewport.Width / 2) / (viewport.Width / 2) * worldHalfWidth;
                 float worldY = -(pixelY - viewport.Height / 2) / (viewport.Height / 2) * worldHalfHeight;
                 Vector3 basePosition = new Vector3(worldX, worldY, 0);
@@ -308,7 +308,7 @@ namespace GameProject0
         {
             _skeleton = new Skeleton();
             _skeleton.LoadContent(_content);
-            _skeleton.Position = new Vector2(20, GROUND_Y - _skeleton.Height);
+            _skeleton.Position = new Vector2(0, GROUND_Y - _skeleton.Height);
             _skeleton.Direction = Direction.Right;
         }
 

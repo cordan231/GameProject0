@@ -155,7 +155,7 @@ namespace GameProject0.Enemies
                     {
                         _lastAttackState = _currentState;
                         SpawnArrow(_lastAttackState);
-                        _postAttackTimer = 4.0;
+                        _postAttackTimer = 3.0;
                         SetState(SkeletonState.Idle);
                     }
                     break;
@@ -208,7 +208,7 @@ namespace GameProject0.Enemies
                     if (_stateTimer <= 0) // Failsafe
                     {
                         _position.X = _evasionTargetX;
-                        Direction = (_evasionTargetX > 20) ? Direction.Left : Direction.Right;
+                        Direction = (_evasionTargetX > 0) ? Direction.Left : Direction.Right;
                         SetState(SkeletonState.Idle);
                     }
                     break;
@@ -281,7 +281,6 @@ namespace GameProject0.Enemies
                 yOffset = 65 * Scale; // Much lower
             }
 
-            // 48 is arrow texture width, 2.0 is arrow scale
             float arrowWidth = 48 * 2.0f;
             float x = (Direction == Direction.Right) ? Position.X + 80 * Scale : Position.X + (FRAME_WIDTH * Scale - 80 * Scale) - arrowWidth;
             float y = Position.Y + yOffset;
@@ -295,11 +294,11 @@ namespace GameProject0.Enemies
         {
             if (Direction == Direction.Right)
             {
-                _evasionTargetX = viewport.Width - Width - 20;
+                _evasionTargetX = viewport.Width - Width;
             }
             else
             {
-                _evasionTargetX = 20;
+                _evasionTargetX = 0;
             }
             SetState(SkeletonState.Evasion);
         }
