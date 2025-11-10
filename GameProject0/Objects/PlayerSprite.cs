@@ -256,8 +256,47 @@ namespace GameProject0
 
         public void SetState(CurrentState state)
         {
-            if (_currentState == state || _currentState == CurrentState.Dead) return;
+            if (_currentState == CurrentState.Dead) return;
 
+            // --- FIX IS HERE ---
+            // Allow Idle and Running to "reset" themselves if the texture is wrong
+            if (state == CurrentState.Idle || state == CurrentState.Running)
+            {
+                if (_currentState == state)
+                {
+                    // State is the same, but check if texture is correct
+                    var expectedTexture = (state == CurrentState.Idle)
+                        ? (Game1.GunModeActive ? _gunIdleTexture : _idleTexture)
+                        : (Game1.GunModeActive ? _gunRunningTexture : _runningTexture);
+
+                    if (_currentTexture == expectedTexture)
+                    {
+                        return; // Nothing to do
+                    }
+
+                    // Texture is wrong! Update it but DON'T reset the animation
+                    _currentTexture = expectedTexture;
+                    if (state == CurrentState.Idle)
+                    {
+                        _totalFrames = Game1.GunModeActive ? 6 : 5;
+                    }
+                    else // Running
+                    {
+                        _totalFrames = 12;
+                    }
+                    if (_currentFrame >= _totalFrames) _currentFrame = 0; // Clamp frame
+                    return; // Texture fixed, animation preserved
+                }
+            }
+            else
+            {
+                // For Attacking, Rolling, Hurt states, if state is same, do nothing
+                if (_currentState == state) return;
+            }
+            // --- END FIX ---
+
+
+            // If we get here, it's a NEW state. Reset animation.
             _currentState = state;
             _currentFrame = 0;
             _frameTimer = 0;
