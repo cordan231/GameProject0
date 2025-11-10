@@ -169,6 +169,7 @@ namespace GameProject0.Enemies
                     // Rule 2: Check for attack
                     if (distance < ATTACK_RANGE)
                     {
+                        Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right;
                         SetState(MinotaurState.Attack);
                     }
                     else // Not in range, keep chasing
@@ -245,7 +246,7 @@ namespace GameProject0.Enemies
             spriteBatch.Draw(_currentTexture, Position, sourceRect, _color, 0f, Vector2.Zero, Scale, effects, 0f);
         }
 
-        public void TakeDamage(int damage)
+        public void TakeDamage(int damage, PlayerSprite player)
         {
             if (_currentState == MinotaurState.Dead) return;
 
@@ -262,6 +263,12 @@ namespace GameProject0.Enemies
             // Rule 4: If attacked during Idle (cooldown), immediately attack.
             if (_currentState == MinotaurState.Idle)
             {
+                // Set direction TOWARDS player just before attacking
+                if (player != null)
+                {
+                    Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right;
+                }
+                // --- END FIX ---
                 SetState(MinotaurState.Attack);
                 // The cooldown will be reset to 3.0 when this new attack animation finishes (handled in Update)
             }

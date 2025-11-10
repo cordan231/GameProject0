@@ -170,7 +170,7 @@ namespace GameProject0
                 {
                     _attackCooldown = true;
                     _attackCooldownTimer = 0.5;
-                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1);
+                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1, _playerSprite); // <-- MODIFIED: Pass _playerSprite
                     Game1.Instance.BloodSplatters.Splatter(_minotaur.Bounds.Center);
                 }
                 if (_minotaur.IsAttackHitboxActive && _minotaur.AttackBox.CollidesWith(_playerSprite.Bounds))

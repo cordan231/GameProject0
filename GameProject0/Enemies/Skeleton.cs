@@ -65,6 +65,7 @@ namespace GameProject0.Enemies
 
         private double _idleTimer = 2.0;
         private double _postAttackTimer = 0;
+        private bool _postEvasionAttack = false; // Flag to track post-evasion attack
 
         public BoundingRectangle Bounds { get; private set; }
         public List<Arrow> Arrows { get; private set; }
@@ -180,7 +181,17 @@ namespace GameProject0.Enemies
                     {
                         _lastAttackState = _currentState;
                         SpawnArrow(_lastAttackState);
-                        _postAttackTimer = 3.0;
+
+                        if (_postEvasionAttack)
+                        {
+                            _idleTimer = 3.0; // Start 3-second idle
+                            _postAttackTimer = 0; // Don't evade again
+                            _postEvasionAttack = false;
+                        }
+                        else
+                        {
+                            _postAttackTimer = 3.0; // Normal 3-second delay before evading
+                        }
                         SetState(SkeletonState.Idle);
                     }
                     break;
@@ -195,7 +206,9 @@ namespace GameProject0.Enemies
                         {
                             _position.X = _evasionTargetX;
                             Direction = Direction.Left; // Arrived at right, turn left
-                            SetState(SkeletonState.Idle);
+                            // --- FIX ---
+                            SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
+                            // --- END FIX ---
                         }
                     }
                     else // Target is to the left
@@ -205,7 +218,7 @@ namespace GameProject0.Enemies
                         {
                             _position.X = _evasionTargetX;
                             Direction = Direction.Right; // Arrived at left, turn right
-                            SetState(SkeletonState.Idle);
+                            SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                         }
                     }
                     Position = _position;
@@ -234,7 +247,7 @@ namespace GameProject0.Enemies
                     {
                         _position.X = _evasionTargetX;
                         Direction = (_evasionTargetX > 0) ? Direction.Left : Direction.Right;
-                        SetState(SkeletonState.Idle);
+                        SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                     }
                     break;
 
@@ -367,7 +380,7 @@ namespace GameProject0.Enemies
                     _currentTexture = _idleTexture;
                     _totalFrames = 7;
                     _animationFrameTime = 0.15;
-                    _idleTimer = 2.0;
+                    _idleTimer = 3.0;
                     break;
                 case SkeletonState.Attack1:
                     _currentTexture = _attack1Texture;
@@ -387,6 +400,7 @@ namespace GameProject0.Enemies
                     _animationFrameTime = 0.1;
                     _stateTimer = 1.0;
                     _afterImages.Clear();
+                    _postEvasionAttack = true;
                     break;
                 case SkeletonState.Hurt:
                     _currentTexture = _hurtTexture;
