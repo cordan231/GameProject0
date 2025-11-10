@@ -182,8 +182,14 @@ namespace GameProject0
                 {
                     if (arrow.CollidesWith(_playerSprite))
                     {
+                        // Player's TakeDamage method already checks for invincibility
                         _playerSprite.TakeDamage(arrow.Direction);
-                        arrow.IsRemoved = true;
+
+                        // Only remove the arrow if the player is NOT invincible (i.e., not rolling)
+                        if (!_playerSprite.IsInvincible)
+                        {
+                            arrow.IsRemoved = true;
+                        }
                     }
                 }
             }
@@ -306,10 +312,11 @@ namespace GameProject0
 
         private void SpawnSkeleton()
         {
+            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
             _skeleton = new Skeleton();
             _skeleton.LoadContent(_content);
-            _skeleton.Position = new Vector2(0, GROUND_Y - _skeleton.Height);
-            _skeleton.Direction = Direction.Right;
+            _skeleton.Position = new Vector2(viewport.Width - _skeleton.Width, GROUND_Y - _skeleton.Height);
+            _skeleton.Direction = Direction.Left;
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
