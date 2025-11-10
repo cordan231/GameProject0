@@ -12,20 +12,10 @@ namespace GameProject0
         public float X { get; set; }
         public float Y { get; set; }
 
-        // Parameterless constructor for deserialization
         public VectorData() { }
-
-        // Helper constructor to convert from Vector2
-        public VectorData(Vector2 vec)
-        {
-            X = vec.X;
-            Y = vec.Y;
-        }
-
-        // Helper method to convert back to Vector2
+        public VectorData(Vector2 vec) { X = vec.X; Y = vec.Y; }
         public Vector2 ToVector2() => new Vector2(X, Y);
     }
-
 
     /// <summary>
     /// A helper class to store player-specific data.
@@ -40,9 +30,9 @@ namespace GameProject0
     }
 
     /// <summary>
-    /// A helper class to store enemy-specific data.
+    /// A helper class to store minotaur-specific data.
     /// </summary>
-    public class EnemyData
+    public class MinotaurData
     {
         public VectorData Position { get; set; }
         public int Health { get; set; }
@@ -52,20 +42,34 @@ namespace GameProject0
     }
 
     /// <summary>
+    /// A helper class to store skeleton-specific data.
+    /// </summary>
+    public class SkeletonData
+    {
+        public VectorData Position { get; set; }
+        public int Health { get; set; }
+        public Direction Direction { get; set; }
+        public bool IsRemoved { get; set; }
+        public SkeletonState State { get; set; }
+    }
+
+    /// <summary>
     /// The main class that holds all data for a save file.
     /// </summary>
     public class GameState
     {
         public int Score { get; set; }
         public PlayerData Player { get; set; }
-        public EnemyData Minotaur { get; set; }
+        public MinotaurData Minotaur { get; set; }
+        public SkeletonData Skeleton { get; set; }
         public List<VectorData> CoinPositions { get; set; }
 
         public GameState()
         {
             CoinPositions = new List<VectorData>();
             Player = new PlayerData();
-            Minotaur = new EnemyData();
+            Minotaur = new MinotaurData();
+            Skeleton = new SkeletonData();
         }
     }
 }

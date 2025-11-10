@@ -8,6 +8,7 @@ using GameProject0.Enemies;
 using GameProject0.Particles;
 using GameProject0.Collisions;
 using System.Linq;
+using GameProject0.Objects;
 
 namespace GameProject0
 {
@@ -27,16 +28,18 @@ namespace GameProject0
         private Texture2D _whitePixelTexture;
 
         private Minotaur _minotaur;
+        private Skeleton _skeleton;
         private bool _attackCooldown = false;
         private double _attackCooldownTimer = 0;
 
-        private double _minotaurSpawnTimer;
-        private const double MINOTAUR_SPAWN_TIME = 10.0;
+        // private double _minotaurSpawnTimer; // Disabled for Skeleton testing
+        // private const double MINOTAUR_SPAWN_TIME = 10.0;
 
         private const float GROUND_Y = 3 * 64 * 2.0f;
 
         private List<Heart> _minotaurHearts;
         private List<Heart> _playerHearts;
+        private List<Heart> _skeletonHearts;
 
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
@@ -48,9 +51,10 @@ namespace GameProject0
             _coins = new List<Coin>();
             _random = new Random();
             _score = 0;
-            _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME;
+            // _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME; // Disabled
             _minotaurHearts = new List<Heart>();
             _playerHearts = new List<Heart>();
+            _skeletonHearts = new List<Heart>();
         }
 
         public void LoadContent()
@@ -74,17 +78,22 @@ namespace GameProject0
                 GROUND_Y - (yOffset + boxHeight)
             );
 
+            // --- Hearts ---
             _minotaurHearts.Clear();
             _playerHearts.Clear();
+            _skeletonHearts.Clear();
             for (int i = 0; i < 3; i++)
             {
-                // Minotaur gets Red hearts
                 _minotaurHearts.Add(new Heart(Game1.Instance, Color.Red));
-
-                // Player gets Blue hearts
                 _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
             }
+            for (int i = 0; i < 2; i++)
+            {
+                _skeletonHearts.Add(new Heart(Game1.Instance, Color.Green));
+            }
 
+            // --- Spawn Skeleton for Testing ---
+            SpawnSkeleton();
         }
 
         public void Update(GameTime gameTime, InputManager inputManager)
@@ -122,95 +131,64 @@ namespace GameProject0
                 return;
             }
 
-            // Centralized update logic
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _playerSprite.Update(gameTime);
 
-            // Handle Minotaur Updates
-            if (_minotaur != null)
-            {
-                _minotaur.Update(gameTime, viewport.Width);
+            // --- Enemy Updates ---
+            _minotaur?.Update(gameTime, viewport.Width); // Update if minotaur exists
+            _skeleton?.Update(gameTime, viewport); // Update if skeleton exists
 
-                Vector2 minotaurNewPos = _minotaur.Position;
+            // HandleMinotaurSpawning(gameTime); // Disabled for testing
 
-                // CENTRALIZED MINOTAUR MOVEMENT
-                if (_minotaur.CurrentState == MinotaurState.Walk)
-                {
-                    float speed = 100f * dt;
-                    if (_minotaur.Direction == Direction.Left)
-                    {
-                        minotaurNewPos.X -= speed;
-                        if (minotaurNewPos.X < 0)
-                        {
-                            minotaurNewPos.X = 0;
-                            _minotaur.Direction = Direction.Right;
-                        }
-                    }
-                    else
-                    {
-                        minotaurNewPos.X += speed;
-                        if (minotaurNewPos.X > viewport.Width - _minotaur.Width)
-                        {
-                            minotaurNewPos.X = viewport.Width - _minotaur.Width;
-                            _minotaur.Direction = Direction.Left;
-                        }
-                    }
-                }
-                minotaurNewPos.Y = GROUND_Y - _minotaur.Height;
-                _minotaur.Position = minotaurNewPos;
-            }
-
-            HandleMinotaurSpawning(gameTime);
-
-            // Handle Player Input
+            // --- Player Input ---
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
             {
-                if (inputManager.Roll)
-                {
-                    _playerSprite.Roll();
-                }
-                else if (inputManager.Attack)
-                {
-                    _playerSprite.Attack();
-                }
+                if (inputManager.Roll) _playerSprite.Roll();
+                else if (inputManager.Attack) _playerSprite.Attack();
                 else if (inputManager.Direction.X != 0)
                 {
                     _playerSprite.SetState(CurrentState.Running);
                     _playerSprite.SetDirection(inputManager.Direction.X > 0 ? Direction.Right : Direction.Left);
                 }
-                else
-                {
-                    _playerSprite.SetState(CurrentState.Idle);
-                }
+                else _playerSprite.SetState(CurrentState.Idle);
             }
 
-            // Handle Collisions
+            // --- Handle Collisions ---
+            // Minotaur
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
-                // Player attacks minotaur
                 if (_playerSprite.IsAttacking && !_attackCooldown && _playerSprite.AttackBox.CollidesWith(_minotaur.Bounds))
                 {
                     _attackCooldown = true;
                     _attackCooldownTimer = 0.5;
-                    if (Game1.GunModeActive)
-                    {
-                        _minotaur.TakeDamage(100); // 1-hit KO
-                    }
-                    else
-                    {
-                        _minotaur.TakeDamage(1); // Normal damage
-                    }
+                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1);
                     Game1.Instance.BloodSplatters.Splatter(_minotaur.Bounds.Center);
                 }
-
-                // Minotaur attacks player
                 if (_minotaur.IsAttackHitboxActive && _minotaur.AttackBox.CollidesWith(_playerSprite.Bounds))
                 {
                     _playerSprite.TakeDamage(_minotaur.Direction);
                 }
             }
+            // Skeleton
+            if (_skeleton != null && !_skeleton.IsRemoved)
+            {
+                if (_playerSprite.IsAttacking && !_attackCooldown && _playerSprite.AttackBox.CollidesWith(_skeleton.Bounds))
+                {
+                    _attackCooldown = true;
+                    _attackCooldownTimer = 0.5;
+                    _skeleton.TakeDamage(Game1.GunModeActive ? 100 : 1);
+                }
+                foreach (var arrow in _skeleton.Arrows)
+                {
+                    if (arrow.CollidesWith(_playerSprite))
+                    {
+                        _playerSprite.TakeDamage(arrow.Direction);
+                        arrow.IsRemoved = true;
+                    }
+                }
+            }
 
-            // CENTRALIZED PLAYER MOVEMENT
+            // --- Player Movement ---
             Vector2 playerNewPos = _playerSprite.Position;
             if (_playerSprite.CurrentPlayerState == CurrentState.Running || _playerSprite.CurrentPlayerState == CurrentState.Idle)
             {
@@ -229,20 +207,16 @@ namespace GameProject0
                 playerNewPos += _playerSprite.KnockbackVelocity * dt;
             }
 
-            // Clamp player position to screen
             float scale = _playerSprite.Scale;
             float frameWidth = 128 * scale;
             float boxWidth = frameWidth * 0.35f;
             float xOffset = (frameWidth - boxWidth) / 2;
-
             float minX = -xOffset;
             float maxX = viewport.Width - xOffset - boxWidth;
-
             playerNewPos.X = Math.Clamp(playerNewPos.X, minX, maxX);
             _playerSprite.Position = playerNewPos;
 
-
-            // Handle Coins
+            // --- Coin Logic ---
             _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
             if (_coinSpawnTimer > 1.0)
             {
@@ -252,7 +226,6 @@ namespace GameProject0
                 coin.Position = new Vector2(_random.Next(0, _graphicsDeviceManager.GraphicsDevice.Viewport.Width - 64), -64);
                 _coins.Add(coin);
             }
-
             for (int i = _coins.Count - 1; i >= 0; i--)
             {
                 _coins[i].Update(gameTime);
@@ -268,64 +241,61 @@ namespace GameProject0
                 }
             }
 
-
+            // --- 3D Heart Positioning ---
             float angle = (float)gameTime.TotalGameTime.TotalSeconds * 1.5f;
-            viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+            float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f);
+            float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
 
+            // Minotaur Hearts
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
-                // 1. Get the Minotaur's 2D position 
                 float pixelX = _minotaur.Position.X + _minotaur.Width / 2;
                 float pixelY = _minotaur.Position.Y + 30;
-
-                // 2. Calculate the 3D camera's view size 
-
-                float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f);
-
-                float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
-
-                // 3. Convert 2D pixel coordinates to 3D world coordinates
                 float worldX = (pixelX - viewport.Width / 2) / (viewport.Width / 2) * worldHalfWidth;
                 float worldY = -(pixelY - viewport.Height / 2) / (viewport.Height / 2) * worldHalfHeight;
                 Vector3 basePosition = new Vector3(worldX, worldY, 0);
-
-                // 4. Position the hearts relative to this 3D anchor point
                 for (int i = 0; i < _minotaurHearts.Count; i++)
                 {
                     xOffset = (i - (_minotaurHearts.Count - 1) / 2.0f) * 0.8f;
+                    _minotaurHearts[i].World = Matrix.CreateScale(0.2f) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
+                }
+            }
+            else { /* Hide Hearts */ }
 
-                    _minotaurHearts[i].World = Matrix.CreateScale(0.2f) *
-                                       Matrix.CreateRotationY(angle) *
-                                       Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
+            // Skeleton Hearts (Top-Left)
+            float topEdgeOfView = 3.5f;
+            float leftEdgeOfView = -5.5f;
+            float heartScale = 0.2f;
+            float heartSpacing = 1.0f;
+
+            if (_skeleton != null && !_skeleton.IsRemoved)
+            {
+                for (int i = 0; i < _skeletonHearts.Count; i++)
+                {
+                    xOffset = leftEdgeOfView + (i * heartSpacing);
+                    _skeletonHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
                 }
             }
             else
             {
-                // If there's no minotaur, hide the hearts far away
-                for (int i = 0; i < _minotaurHearts.Count; i++)
+                for (int i = 0; i < _skeletonHearts.Count; i++)
                 {
-                    _minotaurHearts[i].World = Matrix.CreateTranslation(1000, 1000, 0);
+                    _skeletonHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0); // Hide
                 }
             }
 
-            // --- Position Player hearts in the top-right corner ---
-            float topEdgeOfView = 3.5f;    // 3D Y-coordinate for top of screen
-            float rightEdgeOfView = 5.5f;  // 3D X-coordinate for right of screen
-            float playerHeartScale = 0.2f;
-            float playerHeartSpacing = 1.0f;
 
+            // Player Hearts (Top-Right)
+            float rightEdgeOfView = 5.5f;
             for (int i = 0; i < _playerHearts.Count; i++)
             {
-                
-                xOffset = rightEdgeOfView - (i * playerHeartSpacing);
-
-                _playerHearts[i].World = Matrix.CreateScale(playerHeartScale) *
-                                       Matrix.CreateRotationY(angle) *
-                                       Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
+                xOffset = rightEdgeOfView - (i * heartSpacing);
+                _playerHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
             }
 
         }
 
+        /* // Disabling Minotaur spawning for Skeleton test
         private void HandleMinotaurSpawning(GameTime gameTime)
         {
             if (_minotaur == null || _minotaur.IsRemoved)
@@ -338,35 +308,31 @@ namespace GameProject0
                 }
             }
         }
-
+        
         private void SpawnMinotaur()
         {
-            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
-            _minotaur = new Minotaur();
-            _minotaur.LoadContent(_content);
+            // ... spawn logic ...
+        }
+        */
 
-            int side = _random.Next(2); // 0 for left, 1 for right
-            if (side == 0)
-            {
-                _minotaur.Position = new Vector2(-_minotaur.Width, GROUND_Y - _minotaur.Height);
-                _minotaur.Direction = Direction.Right;
-            }
-            else
-            {
-                _minotaur.Position = new Vector2(viewport.Width, GROUND_Y - _minotaur.Height);
-                _minotaur.Direction = Direction.Left;
-            }
-            Game1.Instance.ShakeScreen(10f, 0.5f);
+        private void SpawnSkeleton()
+        {
+            _skeleton = new Skeleton();
+            _skeleton.LoadContent(_content);
+            _skeleton.Position = new Vector2(20, GROUND_Y - _skeleton.Height);
+            _skeleton.Direction = Direction.Right;
+            // Game1.Instance.ShakeScreen(10f, 0.5f); // Optional
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
-
             _tilemap.Draw(gameTime, spriteBatch);
 
             _playerSprite.Draw(spriteBatch);
             _minotaur?.Draw(spriteBatch);
+            _skeleton?.Draw(spriteBatch);
+
             foreach (var coin in _coins)
             {
                 coin.Draw(spriteBatch);
@@ -377,7 +343,7 @@ namespace GameProject0
             Vector2 scoreTextSize = _spriteFont.MeasureString(scoreText);
             float padding = 10f;
             float outlineThickness = 2f;
-            Vector2 textPosition = new Vector2(10, 10);
+            Vector2 textPosition = new Vector2(viewport.Width / 2 - scoreTextSize.X / 2, 10); // Centered
 
             Rectangle backgroundRect = new Rectangle(
                 (int)(textPosition.X - padding),
@@ -385,7 +351,6 @@ namespace GameProject0
                 (int)(scoreTextSize.X + padding * 2),
                 (int)(scoreTextSize.Y + padding * 2)
             );
-
             Rectangle outlineRect = new Rectangle(
                 backgroundRect.X - (int)outlineThickness,
                 backgroundRect.Y - (int)outlineThickness,
@@ -400,33 +365,31 @@ namespace GameProject0
 
         public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
         {
-            // Reset graphics device states for 3D rendering
             graphicsDevice.BlendState = BlendState.Opaque;
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
             graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
-            // --- Draw Minotaur Hearts ---
+            // Minotaur Hearts
             int minotaurHeartsToDraw = 0;
-            if (_minotaur != null && !_minotaur.IsRemoved)
-            {
-                minotaurHeartsToDraw = _minotaur.Health;
-            }
+            if (_minotaur != null && !_minotaur.IsRemoved) minotaurHeartsToDraw = _minotaur.Health;
             for (int i = 0; i < minotaurHeartsToDraw; i++)
             {
-                if (i < _minotaurHearts.Count)
-                {
-                    _minotaurHearts[i].Draw();
-                }
+                if (i < _minotaurHearts.Count) _minotaurHearts[i].Draw();
             }
 
-            // --- Draw Player Hearts ---
+            // Skeleton Hearts
+            int skeletonHeartsToDraw = 0;
+            if (_skeleton != null && !_skeleton.IsRemoved) skeletonHeartsToDraw = _skeleton.Health;
+            for (int i = 0; i < skeletonHeartsToDraw; i++)
+            {
+                if (i < _skeletonHearts.Count) _skeletonHearts[i].Draw();
+            }
+
+            // Player Hearts
             int playerHeartsToDraw = _playerSprite.Health;
             for (int i = 0; i < playerHeartsToDraw; i++)
             {
-                if (i < _playerHearts.Count)
-                {
-                    _playerHearts[i].Draw();
-                }
+                if (i < _playerHearts.Count) _playerHearts[i].Draw();
             }
         }
 
@@ -444,13 +407,21 @@ namespace GameProject0
                     Direction = _playerSprite._currentDirection
                 },
                 CoinPositions = _coins.Select(c => new VectorData(c.Position)).ToList(),
-                Minotaur = _minotaur == null ? new EnemyData { IsRemoved = true } : new EnemyData
+                Minotaur = _minotaur == null ? new MinotaurData { IsRemoved = true } : new MinotaurData
                 {
                     IsRemoved = _minotaur.IsRemoved,
                     Position = new VectorData(_minotaur.Position),
                     Health = _minotaur.Health,
                     Direction = _minotaur.Direction,
                     State = _minotaur.CurrentState
+                },
+                Skeleton = _skeleton == null ? new SkeletonData { IsRemoved = true } : new SkeletonData
+                {
+                    IsRemoved = _skeleton.IsRemoved,
+                    Position = new VectorData(_skeleton.Position),
+                    Health = _skeleton.Health,
+                    Direction = _skeleton.Direction,
+                    State = _skeleton.CurrentState
                 }
             };
 
@@ -467,17 +438,14 @@ namespace GameProject0
                 return;
             }
 
-            // Restore game state
             _score = state.Score;
 
-            // Restore player
             _playerSprite.SetHealth(state.Player.Health);
             _playerSprite.SetState(state.Player.State);
             _playerSprite.KnockbackVelocity = state.Player.KnockbackVelocity.ToVector2();
             _playerSprite._currentDirection = state.Player.Direction;
             _playerSprite.Position = state.Player.Position.ToVector2();
 
-            // Restore coins
             _coins.Clear();
             foreach (var pos in state.CoinPositions)
             {
@@ -487,7 +455,6 @@ namespace GameProject0
                 _coins.Add(coin);
             }
 
-            // Restore minotaur
             if (state.Minotaur != null && !state.Minotaur.IsRemoved)
             {
                 _minotaur = new Minotaur();
@@ -497,10 +464,18 @@ namespace GameProject0
                 _minotaur.SetState(state.Minotaur.State);
                 _minotaur.Position = state.Minotaur.Position.ToVector2();
             }
-            else
+            else _minotaur = null;
+
+            if (state.Skeleton != null && !state.Skeleton.IsRemoved)
             {
-                _minotaur = null;
+                _skeleton = new Skeleton();
+                _skeleton.LoadContent(_content);
+                _skeleton.Health = state.Skeleton.Health;
+                _skeleton.Direction = state.Skeleton.Direction;
+                _skeleton.SetState(state.Skeleton.State);
+                _skeleton.Position = state.Skeleton.Position.ToVector2();
             }
+            else _skeleton = null;
 
             Console.WriteLine("Game Loaded!");
         }
