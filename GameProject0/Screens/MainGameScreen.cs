@@ -324,9 +324,25 @@ namespace GameProject0
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
             _minotaur = new Minotaur();
             _minotaur.LoadContent(_content);
-            Vector2 spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _minotaur.Height);
-            Vector2 targetPos = new Vector2(viewport.Width - _minotaur.Width, GROUND_Y - _minotaur.Height);
-            _minotaur.WalkIn(spawnPos, targetPos);
+
+            Vector2 spawnPos;
+            Vector2 targetPos;
+            Direction walkInDir;
+
+            if (_random.Next(2) == 0) // Spawn Right
+            {
+                spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _minotaur.Height);
+                targetPos = new Vector2(viewport.Width - _minotaur.Width, GROUND_Y - _minotaur.Height);
+                walkInDir = Direction.Left;
+            }
+            else // Spawn Left
+            {
+                spawnPos = new Vector2(-100 - _minotaur.Width, GROUND_Y - _minotaur.Height);
+                targetPos = new Vector2(0, GROUND_Y - _minotaur.Height);
+                walkInDir = Direction.Right;
+            }
+
+            _minotaur.WalkIn(spawnPos, targetPos, walkInDir);
             _nextSpawn = SpawnState.Skeleton;
 
             _minotaurHearts.Clear();
@@ -341,9 +357,25 @@ namespace GameProject0
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
             _skeleton = new Skeleton();
             _skeleton.LoadContent(_content);
-            Vector2 spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _skeleton.Height);
-            Vector2 targetPos = new Vector2(viewport.Width - _skeleton.Width, GROUND_Y - _skeleton.Height);
-            _skeleton.WalkIn(spawnPos, targetPos);
+
+            Vector2 spawnPos;
+            Vector2 targetPos;
+            Direction walkInDir;
+
+            if (_random.Next(2) == 0) // Spawn Right
+            {
+                spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _skeleton.Height);
+                targetPos = new Vector2(viewport.Width - _skeleton.Width, GROUND_Y - _skeleton.Height);
+                walkInDir = Direction.Left;
+            }
+            else // Spawn Left
+            {
+                spawnPos = new Vector2(-100 - _skeleton.Width, GROUND_Y - _skeleton.Height);
+                targetPos = new Vector2(0, GROUND_Y - _skeleton.Height);
+                walkInDir = Direction.Right;
+            }
+
+            _skeleton.WalkIn(spawnPos, targetPos, walkInDir);
             _nextSpawn = SpawnState.Minotaur;
 
             _skeletonHearts.Clear();

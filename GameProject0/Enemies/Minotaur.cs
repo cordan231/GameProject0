@@ -93,11 +93,11 @@ namespace GameProject0.Enemies
             SetState(MinotaurState.Idle);
         }
 
-        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition)
+        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition, Direction direction)
         {
             Position = spawnPosition;
             _walkInTargetPosition = targetPosition;
-            Direction = Direction.Left;
+            Direction = direction;
             SetState(MinotaurState.WalkingIn);
         }
 
@@ -125,11 +125,23 @@ namespace GameProject0.Enemies
             {
                 case MinotaurState.WalkingIn:
                     // Rule 1: Walk in
-                    _position.X -= WALK_IN_SPEED * dt;
-                    if (_position.X <= _walkInTargetPosition.X)
+                    if (Direction == Direction.Left)
                     {
-                        _position.X = _walkInTargetPosition.X;
-                        SetState(MinotaurState.Walk); // Start chasing
+                        _position.X -= WALK_IN_SPEED * dt;
+                        if (_position.X <= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(MinotaurState.Walk); // Start chasing
+                        }
+                    }
+                    else // Direction is Right
+                    {
+                        _position.X += WALK_IN_SPEED * dt;
+                        if (_position.X >= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(MinotaurState.Walk); // Start chasing
+                        }
                     }
                     Position = _position;
                     break;

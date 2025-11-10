@@ -124,11 +124,11 @@ namespace GameProject0.Enemies
             SetState(SkeletonState.Idle);
         }
 
-        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition)
+        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition, Direction direction)
         {
             Position = spawnPosition;
             _walkInTargetPosition = targetPosition;
-            Direction = Direction.Left;
+            Direction = direction;
             SetState(SkeletonState.WalkingIn);
         }
 
@@ -148,11 +148,23 @@ namespace GameProject0.Enemies
             switch (_currentState)
             {
                 case SkeletonState.WalkingIn:
-                    _position.X -= WALK_IN_SPEED * dt;
-                    if (_position.X <= _walkInTargetPosition.X)
+                    if (Direction == Direction.Left)
                     {
-                        _position.X = _walkInTargetPosition.X;
-                        SetState(SkeletonState.Idle);
+                        _position.X -= WALK_IN_SPEED * dt;
+                        if (_position.X <= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(SkeletonState.Idle);
+                        }
+                    }
+                    else // Direction is Right
+                    {
+                        _position.X += WALK_IN_SPEED * dt;
+                        if (_position.X >= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(SkeletonState.Idle);
+                        }
                     }
                     Position = _position;
                     break;
