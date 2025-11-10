@@ -18,7 +18,6 @@ namespace GameProject0.Enemies
         Dead
     }
 
-    // Snapshot for the after-image trail
     struct AfterImageSnapshot
     {
         public Vector2 Position;
@@ -41,6 +40,7 @@ namespace GameProject0.Enemies
 
         private Vector2 _position;
         private SkeletonState _currentState;
+        private SkeletonState _lastAttackState;
         private Direction _direction;
 
         private int _currentFrame;
@@ -62,8 +62,7 @@ namespace GameProject0.Enemies
         private double _animationFrameTime = 0.1;
 
         private double _idleTimer = 2.0;
-        private double _postAttackTimer = 2.0;
-        private bool _attackFired = false;
+        private double _postAttackTimer = 0;
 
         public BoundingRectangle Bounds { get; private set; }
         public List<Arrow> Arrows { get; private set; }
@@ -122,7 +121,6 @@ namespace GameProject0.Enemies
             if (IsRemoved) return;
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // --- Update Timers ---
             if (_hurtFlashTimer > 0)
             {
                 _hurtFlashTimer -= dt;
@@ -131,63 +129,66 @@ namespace GameProject0.Enemies
                 if (_hurtFlashTimer <= 0) _color = Color.White;
             }
 
-            // --- State Machine ---
             switch (_currentState)
             {
                 case SkeletonState.Idle:
                     _idleTimer -= dt;
-                    if (_idleTimer <= 0)
+                    if (_idleTimer <= 0 && _postAttackTimer <= 0)
                     {
-                        // Randomly pick an attack
                         SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
+                    }
+
+                    if (_postAttackTimer > 0)
+                    {
+                        _postAttackTimer -= dt;
+                        if (_postAttackTimer <= 0)
+                        {
+                            StartEvasion(viewport);
+                        }
                     }
                     break;
 
                 case SkeletonState.Attack1:
                 case SkeletonState.Attack2:
                     _stateTimer -= dt;
-                    // Fire arrow at specific frame
-                    if (!_attackFired && _currentFrame >= 3)
-                    {
-                        SpawnArrow();
-                        _attackFired = true;
-                    }
                     if (_stateTimer <= 0)
                     {
-                        _postAttackTimer = 2.0; // Start post-attack wait
-                        SetState(SkeletonState.Idle); // Go to idle to wait
+                        _lastAttackState = _currentState;
+                        SpawnArrow(_lastAttackState);
+                        _postAttackTimer = 4.0;
+                        SetState(SkeletonState.Idle);
                     }
                     break;
 
                 case SkeletonState.Evasion:
                     _stateTimer -= dt;
 
-                    // Move towards target
-                    if (Direction == Direction.Right) // Moving right
+                    if (_evasionTargetX > _position.X) // Target is to the right
                     {
                         _position.X += EVASION_SPEED * dt;
                         if (_position.X >= _evasionTargetX)
                         {
                             _position.X = _evasionTargetX;
+                            Direction = Direction.Left; // Arrived at right, turn left
                             SetState(SkeletonState.Idle);
                         }
                     }
-                    else // Moving left
+                    else // Target is to the left
                     {
                         _position.X -= EVASION_SPEED * dt;
                         if (_position.X <= _evasionTargetX)
                         {
                             _position.X = _evasionTargetX;
+                            Direction = Direction.Right; // Arrived at left, turn right
                             SetState(SkeletonState.Idle);
                         }
                     }
-                    Position = _position; // Update bounds
+                    Position = _position;
 
-                    // After-image logic
                     _afterImageTimer -= dt;
                     if (_afterImageTimer <= 0)
                     {
-                        _afterImageTimer = 0.02; // Spawn new image
+                        _afterImageTimer = 0.02;
                         Color tint = Random.Shared.Next(3) switch
                         {
                             0 => Color.Cyan,
@@ -198,13 +199,18 @@ namespace GameProject0.Enemies
                         {
                             Position = _position,
                             SourceRect = new Rectangle(_currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT),
-                            Effects = (_direction == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
+                            Effects = (Direction == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
                             Alpha = 0.5f,
                             Tint = tint
                         });
                     }
 
-                    if (_stateTimer <= 0) SetState(SkeletonState.Idle); // Failsafe
+                    if (_stateTimer <= 0) // Failsafe
+                    {
+                        _position.X = _evasionTargetX;
+                        Direction = (_evasionTargetX > 20) ? Direction.Left : Direction.Right;
+                        SetState(SkeletonState.Idle);
+                    }
                     break;
 
                 case SkeletonState.Hurt:
@@ -224,17 +230,6 @@ namespace GameProject0.Enemies
                     break;
             }
 
-            // Check for post-attack evasion
-            if (_currentState == SkeletonState.Idle && _postAttackTimer > 0)
-            {
-                _postAttackTimer -= dt;
-                if (_postAttackTimer <= 0)
-                {
-                    StartEvasion(viewport);
-                }
-            }
-
-            // --- Update Animation ---
             _animationTimer += dt;
             if (_animationTimer > _animationFrameTime)
             {
@@ -243,7 +238,7 @@ namespace GameProject0.Enemies
                 {
                     if (_currentState == SkeletonState.Dead)
                     {
-                        _currentFrame = _totalFrames - 1; // Hold last frame
+                        _currentFrame = _totalFrames - 1;
                     }
                     else
                     {
@@ -253,18 +248,16 @@ namespace GameProject0.Enemies
                 _animationTimer -= _animationFrameTime;
             }
 
-            // Update Arrows
             for (int i = Arrows.Count - 1; i >= 0; i--)
             {
                 Arrows[i].Update(gameTime, viewport);
                 if (Arrows[i].IsRemoved) Arrows.RemoveAt(i);
             }
 
-            // Update After-images
             for (int i = _afterImages.Count - 1; i >= 0; i--)
             {
                 var image = _afterImages[i];
-                image.Alpha -= dt * 2.0f; // Fade over 0.5s
+                image.Alpha -= dt * 2.0f;
                 if (image.Alpha <= 0)
                 {
                     _afterImages.RemoveAt(i);
@@ -276,10 +269,23 @@ namespace GameProject0.Enemies
             }
         }
 
-        private void SpawnArrow()
+        private void SpawnArrow(SkeletonState attackType)
         {
-            float x = (Direction == Direction.Right) ? Position.X + 80 * Scale : Position.X + 10 * Scale;
-            float y = Position.Y + 45 * Scale;
+            float yOffset;
+            if (attackType == SkeletonState.Attack1)
+            {
+                yOffset = 50 * Scale; // Slightly lower
+            }
+            else // Attack2
+            {
+                yOffset = 65 * Scale; // Much lower
+            }
+
+            // 48 is arrow texture width, 2.0 is arrow scale
+            float arrowWidth = 48 * 2.0f;
+            float x = (Direction == Direction.Right) ? Position.X + 80 * Scale : Position.X + (FRAME_WIDTH * Scale - 80 * Scale) - arrowWidth;
+            float y = Position.Y + yOffset;
+
             Arrow arrow = new Arrow(new Vector2(x, y), Direction);
             arrow.LoadContent(Game1.Instance.Content);
             Arrows.Add(arrow);
@@ -287,16 +293,13 @@ namespace GameProject0.Enemies
 
         private void StartEvasion(Viewport viewport)
         {
-            // Flip direction and set target
             if (Direction == Direction.Right)
             {
-                Direction = Direction.Left;
-                _evasionTargetX = 20; // Left edge
+                _evasionTargetX = viewport.Width - Width - 20;
             }
             else
             {
-                Direction = Direction.Right;
-                _evasionTargetX = viewport.Width - Width - 20; // Right edge
+                _evasionTargetX = 20;
             }
             SetState(SkeletonState.Evasion);
         }
@@ -328,7 +331,6 @@ namespace GameProject0.Enemies
             _currentState = state;
             _currentFrame = 0;
             _animationTimer = 0;
-            _attackFired = false;
 
             switch (state)
             {
@@ -336,7 +338,7 @@ namespace GameProject0.Enemies
                     _currentTexture = _idleTexture;
                     _totalFrames = 7;
                     _animationFrameTime = 0.15;
-                    _idleTimer = 2.0; // Reset idle timer
+                    _idleTimer = 2.0;
                     break;
                 case SkeletonState.Attack1:
                     _currentTexture = _attack1Texture;
@@ -354,7 +356,7 @@ namespace GameProject0.Enemies
                     _currentTexture = _evasionTexture;
                     _totalFrames = 6;
                     _animationFrameTime = 0.1;
-                    _stateTimer = _totalFrames * _animationFrameTime * 1.5; // Give it time to cross
+                    _stateTimer = 1.0;
                     _afterImages.Clear();
                     break;
                 case SkeletonState.Hurt:
@@ -389,18 +391,15 @@ namespace GameProject0.Enemies
         {
             if (IsRemoved) return;
 
-            // Draw after-images
             foreach (var image in _afterImages)
             {
                 spriteBatch.Draw(_evasionTexture, image.Position, image.SourceRect, image.Tint * image.Alpha, 0f, Vector2.Zero, Scale, image.Effects, 0f);
             }
 
-            // Draw main sprite
             var effects = (_direction == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             var sourceRect = new Rectangle(_currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
             spriteBatch.Draw(_currentTexture, Position, sourceRect, _color, 0f, Vector2.Zero, Scale, effects, 0f);
 
-            // Draw arrows
             foreach (var arrow in Arrows)
             {
                 arrow.Draw(spriteBatch);

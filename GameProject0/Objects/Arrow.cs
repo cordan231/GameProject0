@@ -14,7 +14,7 @@ namespace GameProject0.Objects
         public Direction Direction { get; private set; }
         public bool IsRemoved { get; set; } = false;
 
-        private const float SPEED = 500f;
+        private const float SPEED = 800f;
         private const float SCALE = 2.0f;
 
         public Arrow(Vector2 position, Direction direction)

@@ -245,6 +245,8 @@ namespace GameProject0
             float angle = (float)gameTime.TotalGameTime.TotalSeconds * 1.5f;
             float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f);
             float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
+            float heartScale = 0.2f;
+            float heartSpacing = 0.8f;
 
             // Minotaur Hearts
             if (_minotaur != null && !_minotaur.IsRemoved)
@@ -256,64 +258,51 @@ namespace GameProject0
                 Vector3 basePosition = new Vector3(worldX, worldY, 0);
                 for (int i = 0; i < _minotaurHearts.Count; i++)
                 {
-                    xOffset = (i - (_minotaurHearts.Count - 1) / 2.0f) * 0.8f;
-                    _minotaurHearts[i].World = Matrix.CreateScale(0.2f) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
+                    xOffset = (i - (_minotaurHearts.Count - 1) / 2.0f) * heartSpacing;
+                    _minotaurHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
                 }
             }
-            else { /* Hide Hearts */ }
+            else
+            {
+                for (int i = 0; i < _minotaurHearts.Count; i++)
+                {
+                    _minotaurHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0);
+                }
+            }
 
-            // Skeleton Hearts (Top-Left)
-            float topEdgeOfView = 3.5f;
-            float leftEdgeOfView = -5.5f;
-            float heartScale = 0.2f;
-            float heartSpacing = 1.0f;
-
+            // Skeleton Hearts
             if (_skeleton != null && !_skeleton.IsRemoved)
             {
+                float pixelX = _skeleton.Position.X + _skeleton.Width / 2;
+                float pixelY = _skeleton.Position.Y + 30;
+                float worldX = (pixelX - viewport.Width / 2) / (viewport.Width / 2) * worldHalfWidth;
+                float worldY = -(pixelY - viewport.Height / 2) / (viewport.Height / 2) * worldHalfHeight;
+                Vector3 basePosition = new Vector3(worldX, worldY, 0);
                 for (int i = 0; i < _skeletonHearts.Count; i++)
                 {
-                    xOffset = leftEdgeOfView + (i * heartSpacing);
-                    _skeletonHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
+                    xOffset = (i - (_skeletonHearts.Count - 1) / 2.0f) * heartSpacing;
+                    _skeletonHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
                 }
             }
             else
             {
                 for (int i = 0; i < _skeletonHearts.Count; i++)
                 {
-                    _skeletonHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0); // Hide
+                    _skeletonHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0);
                 }
             }
 
 
             // Player Hearts (Top-Right)
+            float topEdgeOfView = 3.5f;
             float rightEdgeOfView = 5.5f;
             for (int i = 0; i < _playerHearts.Count; i++)
             {
-                xOffset = rightEdgeOfView - (i * heartSpacing);
+                xOffset = rightEdgeOfView - (i * (heartSpacing + 0.2f)); // Player hearts slightly more spaced
                 _playerHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
             }
 
         }
-
-        /* // Disabling Minotaur spawning for Skeleton test
-        private void HandleMinotaurSpawning(GameTime gameTime)
-        {
-            if (_minotaur == null || _minotaur.IsRemoved)
-            {
-                _minotaurSpawnTimer -= gameTime.ElapsedGameTime.TotalSeconds;
-                if (_minotaurSpawnTimer <= 0)
-                {
-                    SpawnMinotaur();
-                    _minotaurSpawnTimer = MINOTAUR_SPAWN_TIME;
-                }
-            }
-        }
-        
-        private void SpawnMinotaur()
-        {
-            // ... spawn logic ...
-        }
-        */
 
         private void SpawnSkeleton()
         {
@@ -321,7 +310,6 @@ namespace GameProject0
             _skeleton.LoadContent(_content);
             _skeleton.Position = new Vector2(20, GROUND_Y - _skeleton.Height);
             _skeleton.Direction = Direction.Right;
-            // Game1.Instance.ShakeScreen(10f, 0.5f); // Optional
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
@@ -338,12 +326,12 @@ namespace GameProject0
                 coin.Draw(spriteBatch);
             }
 
-            // --- Draw Score Box ---
+            // --- Draw Score Box (Back to Top-Left) ---
             string scoreText = $"Score: {_score}";
             Vector2 scoreTextSize = _spriteFont.MeasureString(scoreText);
             float padding = 10f;
             float outlineThickness = 2f;
-            Vector2 textPosition = new Vector2(viewport.Width / 2 - scoreTextSize.X / 2, 10); // Centered
+            Vector2 textPosition = new Vector2(10, 10);
 
             Rectangle backgroundRect = new Rectangle(
                 (int)(textPosition.X - padding),
