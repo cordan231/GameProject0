@@ -86,7 +86,7 @@ namespace GameProject0
                 GROUND_Y - _playerSprite.Height
             );
 
-            if (inputManager.Select)
+            if (inputManager.Attack)
             {
                 int selectedIndex = GetSelectedMenuIndex();
                 if (selectedIndex != -1)
@@ -201,7 +201,7 @@ namespace GameProject0
                 }
             }
 
-            string instructions = "<- -> or A D TO MOVE     ENTER TO SELECT";
+            string instructions = "<- -> or A D TO MOVE     E TO SELECT";
             Vector2 instructionsSize = _spriteFont.MeasureString(instructions);
             Vector2 instructionsPosition = new Vector2(
                 viewport.Width - instructionsSize.X - 10,

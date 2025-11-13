@@ -40,6 +40,10 @@ namespace GameProject0
         private List<Heart> _playerHearts;
         private List<Heart> _skeletonHearts;
 
+        private bool _isPaused = false;
+        private int _pauseSelection = 0;
+        private List<string> _pauseOptions = new List<string> { "RESUME", "EXIT TO MENU" };
+
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
             _screenManager = screenManager;
@@ -90,9 +94,29 @@ namespace GameProject0
 
         public void Update(GameTime gameTime, InputManager inputManager)
         {
+            if (inputManager.Exit)
+            {
+                _isPaused = !_isPaused;
+                _pauseSelection = 0; // Reset selection when opening menu
+                return;
+            }
+
+            if (_isPaused)
+            {
+                if (inputManager.Direction.Y > 0) _pauseSelection = 1;
+                if (inputManager.Direction.Y < 0) _pauseSelection = 0;
+
+                if (inputManager.Attack || inputManager.Select)
+                {
+                    if (_pauseSelection == 0) _isPaused = false; // Resume
+                    else _screenManager.LoadScreen(new TitleScreen()); // Exit
+                }
+                return;
+            }
+
             if (_playerSprite.IsDead)
             {
-                _screenManager.LoadScreen(new TitleScreen());
+                _screenManager.LoadScreen(new GameOverScreen(_score));
                 return;
             }
 
@@ -422,6 +446,27 @@ namespace GameProject0
             spriteBatch.Draw(_whitePixelTexture, outlineRect, Color.White);
             spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139));
             spriteBatch.DrawString(_spriteFont, scoreText, textPosition, Color.White);
+
+            // --- PAUSE MENU OVERLAY ---
+            if (_isPaused)
+            {
+                spriteBatch.Draw(_whitePixelTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * 0.7f);
+
+                Vector2 center = new Vector2(viewport.Width / 2, viewport.Height / 2);
+
+                string title = "PAUSED";
+                Vector2 titleSize = _spriteFont.MeasureString(title);
+                spriteBatch.DrawString(_spriteFont, title, center - titleSize / 2 - new Vector2(0, 60), Color.White);
+
+                for (int i = 0; i < _pauseOptions.Count; i++)
+                {
+                    Color color = (i == _pauseSelection) ? Color.Yellow : Color.Gray;
+                    string text = (i == _pauseSelection) ? $"> {_pauseOptions[i]} <" : _pauseOptions[i];
+                    Vector2 textSize = _spriteFont.MeasureString(text);
+                    spriteBatch.DrawString(_spriteFont, text, center - textSize / 2 + new Vector2(0, i * 40), color);
+                }
+            }
+
         }
 
         public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)

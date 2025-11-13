@@ -43,6 +43,15 @@ namespace GameProject0
                 Direction += new Vector2(1, 0);
             }
 
+            if (_currentKeyboardState.IsKeyDown(Keys.Up) || _currentKeyboardState.IsKeyDown(Keys.W))
+            {
+                Direction += new Vector2(0, -1);
+            }
+            if (_currentKeyboardState.IsKeyDown(Keys.Down) || _currentKeyboardState.IsKeyDown(Keys.S))
+            {
+                Direction += new Vector2(0, 1);
+            }
+
             if (_currentKeyboardState.IsKeyDown(Keys.Enter) && _priorKeyboardState.IsKeyUp(Keys.Enter))
             {
                 Select = true;
