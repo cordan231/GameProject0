@@ -8,6 +8,14 @@ Asset Files: minotaur_attack.png, minotaur_dead.png, minotaur_hurt.png, minotaur
 Creator: Craftpix.net
 Terms of Use: Free for personal and commercial use. The asset can be found at (https://craftpix.net/freebies/free-minotaur-sprite-sheet-pixel-art-pack)
 
+Asset Files: skeleton_dead.png, skeleton_evasion.png, skeleton_hurt.png, skeleton_idle.png, skeleton_shot1.png, skeleton_shot2.png, skeleton_walk.png, arrow_sprite.png
+Creator: Craftpix.net
+Terms of Use: Free for personal and commercial use. The asset can be found at (https://craftpix.net/freebies/free-skeleton-pixel-art-sprite-sheets/)
+
+Asset Files: gun_dead.png, gun_hurt.png, gun_idle.png, gun_roll.png, gun_run.png, gun_standing_shooting.png
+Creator: Craftpix.net
+Terms of Use: Free for personal and commercial use. The asset can be found at (https://craftpix.net/freebies/free-pixel-prototype-character-sprites-for-shooter)
+
 Asset File: coin-64x64.png
 Creator: kawanami1022
 Terms of Use: Free for personal and commercial use. The asset can be found at (https://kawanami1022.itch.io/coin)
@@ -33,8 +41,3 @@ License: Creative Commons / Attribution 3.0 Unported License (CC BY 3.0) https:/
 Asset File: pickup-coin.wav
 Creator: Developer
 Terms of Use: Created using https://www.bfxr.net
-
-
-
-
-
