@@ -302,7 +302,7 @@ namespace GameProject0
             float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f);
             float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
             float heartScale = 0.2f;
-            float heartSpacing = 0.8f;
+            float heartSpacing = 1f;
 
             // Calculate heart positions for Minotaur
             if (_minotaur != null && !_minotaur.IsRemoved)
@@ -351,8 +351,8 @@ namespace GameProject0
 
 
             // Calculate heart positions for player
-            float topEdgeOfView = 3.5f;
-            float rightEdgeOfView = 5.5f;
+            float topEdgeOfView = worldHalfHeight - 0.75f;
+            float rightEdgeOfView = worldHalfWidth - 1.5f;
             for (int i = 0; i < _playerHearts.Count; i++)
             {
                 xOffset = rightEdgeOfView - (i * (heartSpacing + 0.2f));

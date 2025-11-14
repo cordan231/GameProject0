@@ -46,6 +46,9 @@ namespace GameProject0
             IsMouseVisible = true;
             _screenManager = new ScreenManager();
             _inputManager = new InputManager();
+
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.ApplyChanges();
         }
 
         // Initialize game components

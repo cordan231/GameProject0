@@ -252,12 +252,12 @@ namespace GameProject0.Enemies
                         });
                     }
 
-                    if (_stateTimer <= 0)
-                    {
-                        _position.X = _evasionTargetX;
-                        Direction = (_evasionTargetX > 0) ? Direction.Left : Direction.Right;
-                        SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
-                    }
+                    //if (_stateTimer <= 0)
+                    //{
+                    //    _position.X = _evasionTargetX;
+                    //    Direction = (_evasionTargetX > 0) ? Direction.Left : Direction.Right;
+                    //    SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
+                    //}
                     break;
 
                 case SkeletonState.Hurt:
