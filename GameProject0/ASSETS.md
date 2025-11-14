@@ -41,3 +41,9 @@ License: Creative Commons / Attribution 3.0 Unported License (CC BY 3.0) https:/
 Asset File: pickup-coin.wav
 Creator: Developer
 Terms of Use: Created using https://www.bfxr.net
+
+
+Asset Files: player-hurt.mp3, enemy-hurt.mp3
+Creator: Pixabay
+Terms of Use: Free for personal and commercial use under the Pixabay License.
+Source: [https://pixabay.com/sound-effects/search/8-bit%20hurt](https://pixabay.com/sound-effects/search/8-bit%20hurt)
