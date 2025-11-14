@@ -216,7 +216,16 @@ namespace GameProject0.Enemies
 
             // Animation Loop
             _animationTimer += dt;
-            if (_animationTimer > _animationFrameTime)
+
+            // Determine frame duration
+            double currentFrameDuration = _animationFrameTime;
+            if (_currentState == MinotaurState.Attack && _currentFrame >= 3)
+            {
+                currentFrameDuration = 0.15;
+            }
+
+
+            if (_animationTimer > currentFrameDuration)
             {
                 _currentFrame++;
                 if (_currentFrame >= _totalFrames)
@@ -236,7 +245,7 @@ namespace GameProject0.Enemies
                         _currentFrame = 0;
                     }
                 }
-                _animationTimer -= _animationFrameTime;
+                _animationTimer -= currentFrameDuration;
             }
 
             // Active hitbox only during specific frames of attack
@@ -329,7 +338,7 @@ namespace GameProject0.Enemies
                 case MinotaurState.Attack:
                     _currentTexture = _attackTexture;
                     _totalFrames = 5;
-                    _animationFrameTime = 0.2;
+                    _animationFrameTime = 0.25;
                     break;
             }
         }

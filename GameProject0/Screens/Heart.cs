@@ -29,20 +29,20 @@ namespace GameProject0
             var vertexData = new VertexPositionColor[]
             {
                 // Front Face
-                new VertexPositionColor(new Vector3(0, 0, 0), _color), // 0
-                new VertexPositionColor(new Vector3(-1, 1, 0), _color), // 1
-                new VertexPositionColor(new Vector3(-2, 0, 0), _color), // 2
-                new VertexPositionColor(new Vector3(0, -2, 0), _color), // 3
-                new VertexPositionColor(new Vector3(2, 0, 0), _color), // 4
-                new VertexPositionColor(new Vector3(1, 1, 0), _color), // 5
+                new VertexPositionColor(new Vector3(0, 0, 0), _color),
+                new VertexPositionColor(new Vector3(-1, 1, 0), _color),
+                new VertexPositionColor(new Vector3(-2, 0, 0), _color),
+                new VertexPositionColor(new Vector3(0, -2, 0), _color),
+                new VertexPositionColor(new Vector3(2, 0, 0), _color),
+                new VertexPositionColor(new Vector3(1, 1, 0), _color),
 
                 // Back Face
-                new VertexPositionColor(new Vector3(0, 0, -1), darkColor), // 6
-                new VertexPositionColor(new Vector3(-1, 1, -1), darkColor), // 7
-                new VertexPositionColor(new Vector3(-2, 0, -1), darkColor), // 8
-                new VertexPositionColor(new Vector3(0, -2, -1), darkColor), // 9
-                new VertexPositionColor(new Vector3(2, 0, -1), darkColor), // 10
-                new VertexPositionColor(new Vector3(1, 1, -1), darkColor), // 11
+                new VertexPositionColor(new Vector3(0, 0, -1), darkColor), 
+                new VertexPositionColor(new Vector3(-1, 1, -1), darkColor),
+                new VertexPositionColor(new Vector3(-2, 0, -1), darkColor),
+                new VertexPositionColor(new Vector3(0, -2, -1), darkColor),
+                new VertexPositionColor(new Vector3(2, 0, -1), darkColor),
+                new VertexPositionColor(new Vector3(1, 1, -1), darkColor),
             };
 
             _vertexBuffer = new VertexBuffer(

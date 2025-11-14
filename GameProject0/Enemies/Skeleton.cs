@@ -153,7 +153,7 @@ namespace GameProject0.Enemies
                         if (_position.X <= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(SkeletonState.Idle);
+                            SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                         }
                     }
                     else // Direction is Right
@@ -162,7 +162,7 @@ namespace GameProject0.Enemies
                         if (_position.X >= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(SkeletonState.Idle);
+                            SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                         }
                     }
                     Position = _position;
