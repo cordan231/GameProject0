@@ -5,6 +5,7 @@ using GameProject0.Collisions;
 using GameProject0.Objects;
 using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework.Audio;
 
 namespace GameProject0.Enemies
 {
@@ -39,6 +40,8 @@ namespace GameProject0.Enemies
         private Texture2D _deadTexture;
         private Texture2D _arrowTexture;
         private Texture2D _currentTexture;
+
+        private SoundEffect _enemyHurtSound;
 
         private Vector2 _position;
         private SkeletonState _currentState;
@@ -119,6 +122,8 @@ namespace GameProject0.Enemies
             _hurtTexture = content.Load<Texture2D>("skeleton_hurt");
             _deadTexture = content.Load<Texture2D>("skeleton_dead");
             _arrowTexture = content.Load<Texture2D>("arrow_sprite");
+
+            _enemyHurtSound = content.Load<SoundEffect>("enemy-hurt");
 
             SetState(SkeletonState.Idle);
         }
@@ -355,6 +360,7 @@ namespace GameProject0.Enemies
             if (_currentState == SkeletonState.Dead || _currentState == SkeletonState.Hurt || _currentState == SkeletonState.Evasion) return;
 
             Health -= damage;
+            _enemyHurtSound.Play();
             _hurtFlashTimer = 0.2;
             _isFlashingWhite = true;
             Game1.Instance.BloodSplatters.Splatter(Bounds.Center);

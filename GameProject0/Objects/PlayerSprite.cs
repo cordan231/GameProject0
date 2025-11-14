@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using GameProject0.Collisions;
+using Microsoft.Xna.Framework.Audio;
 
 namespace GameProject0
 {
@@ -40,6 +41,9 @@ namespace GameProject0
         private Texture2D _gunHurtTexture;
         private Texture2D _gunDeadTexture;
         private Texture2D _gunRollTexture;
+
+        // Sound effects
+        private SoundEffect _playerHurtSound;
 
 
         private Vector2 _position;
@@ -125,6 +129,8 @@ namespace GameProject0
             _gunHurtTexture = content.Load<Texture2D>("gun_hurt");
             _gunDeadTexture = content.Load<Texture2D>("gun_dead");
             _gunRollTexture = content.Load<Texture2D>("gun_roll");
+
+            _playerHurtSound = content.Load<SoundEffect>("player-hurt");
 
             _currentState = CurrentState.Idle;
             _currentTexture = _idleTexture;
@@ -214,6 +220,7 @@ namespace GameProject0
             if (IsInvincible || _currentState == CurrentState.Hurt || _currentState == CurrentState.Dead || _hurtCooldown > 0) return;
 
             Health--;
+            _playerHurtSound.Play();
             _hurtCooldown = 1.0;
             Game1.Instance.BloodSplatters.Splatter(Bounds.Center);
 

@@ -91,6 +91,12 @@
 /processorParam:TextureFormat=Color
 /build:Dungeon Ruins Tileset Day.png
 
+#begin enemy-hurt.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:enemy-hurt.mp3
+
 #begin explosion.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -336,6 +342,12 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:player_roll.png
+
+#begin player-hurt.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:player-hurt.mp3
 
 #begin runner.png
 /importer:TextureImporter

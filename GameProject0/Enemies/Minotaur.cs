@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using GameProject0.Collisions;
 using System;
+using Microsoft.Xna.Framework.Audio;
 
 namespace GameProject0.Enemies
 {
@@ -26,6 +27,9 @@ namespace GameProject0.Enemies
         private Texture2D _deadTexture;
         private Texture2D _attackTexture;
         private Texture2D _currentTexture;
+
+        // Sound effects
+        private SoundEffect _enemyHurtSound;
 
         private Vector2 _position;
         private MinotaurState _currentState;
@@ -95,6 +99,8 @@ namespace GameProject0.Enemies
             _deadTexture = content.Load<Texture2D>("minotaur_dead");
             _idleTexture = content.Load<Texture2D>("minotaur_idle");
             _attackTexture = content.Load<Texture2D>("minotaur_attack");
+
+            _enemyHurtSound = content.Load<SoundEffect>("enemy-hurt");
 
             SetState(MinotaurState.Idle);
         }
@@ -268,6 +274,7 @@ namespace GameProject0.Enemies
             if (_currentState == MinotaurState.Dead) return;
 
             Health -= damage;
+            _enemyHurtSound.Play();
             _hurtFlashTimer = 0.2;
             _isFlashingWhite = true;
 
