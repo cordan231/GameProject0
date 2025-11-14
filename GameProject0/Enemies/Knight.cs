@@ -9,6 +9,7 @@ namespace GameProject0.Enemies
 {
     public enum KnightState
     {
+        WalkingIn,
         Idle,
         Walk,
         Run,
@@ -71,6 +72,8 @@ namespace GameProject0.Enemies
         private const float ATTACK_RANGE = 120f;
         private const float RUN_ATTACK_RANGE = 300f;
         private const float PLAYER_CLOSE_RANGE = 200f;
+        private Vector2 _walkInTargetPosition;
+        private const float WALK_IN_SPEED = 200f;
 
         // Vulnerability Windows
         private bool _isVulnerableWindow = false;
@@ -115,6 +118,14 @@ namespace GameProject0.Enemies
             SetState(KnightState.Idle);
         }
 
+        public void WalkIn(Vector2 spawnPosition, Vector2 targetPosition, Direction direction)
+        {
+            Position = spawnPosition;
+            _walkInTargetPosition = targetPosition;
+            Direction = direction;
+            SetState(KnightState.WalkingIn);
+        }
+
         public void Update(GameTime gameTime, PlayerSprite player)
         {
             if (IsRemoved) return;
@@ -152,7 +163,7 @@ namespace GameProject0.Enemies
             if (player != null && !player.IsDead)
             {
                 distance = Vector2.Distance(player.Bounds.Center, Bounds.Center);
-                if (_currentState != KnightState.Run && _currentState != KnightState.RunAttack &&
+                if (_currentState != KnightState.RunAttack &&
                     _currentState != KnightState.ComboAttack1 && _currentState != KnightState.ComboAttack2 &&
                     _currentState != KnightState.ComboAttack3 && _currentState != KnightState.Defend &&
                     _currentState != KnightState.Jump && _currentState != KnightState.Hurt)
@@ -163,6 +174,28 @@ namespace GameProject0.Enemies
 
             switch (_currentState)
             {
+                case KnightState.WalkingIn:
+                    if (Direction == Direction.Left)
+                    {
+                        _position.X -= WALK_IN_SPEED * dt;
+                        if (_position.X <= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(KnightState.Walk);
+                        }
+                    }
+                    else
+                    {
+                        _position.X += WALK_IN_SPEED * dt;
+                        if (_position.X >= _walkInTargetPosition.X)
+                        {
+                            _position.X = _walkInTargetPosition.X;
+                            SetState(KnightState.Walk);
+                        }
+                    }
+                    Position = _position;
+                    break;
+
                 case KnightState.Idle:
                     if (!_isVulnerableWindow)
                     {
@@ -200,7 +233,7 @@ namespace GameProject0.Enemies
                 case KnightState.RunAttack:
                     if (AnimationFinished())
                     {
-                        StartVulnerabilityWindow(2.0, 1);
+                        StartVulnerabilityWindow(3.0, 1);
                     }
                     break;
 
@@ -342,7 +375,7 @@ namespace GameProject0.Enemies
 
         public void SetState(KnightState state)
         {
-            if (_currentState == state) return;
+            //if (_currentState == state) return;
             if (_currentState == KnightState.Dead) return;
             if (_currentState == KnightState.Hurt && state != KnightState.Idle) return; // Can only exit Hurt back to Idle
 
@@ -354,6 +387,11 @@ namespace GameProject0.Enemies
 
             switch (state)
             {
+                case KnightState.WalkingIn:
+                    _currentTexture = _walkTexture;
+                    _totalFrames = 8;
+                    _animationFrameTime = 0.1;
+                    break;
                 case KnightState.Idle:
                     _currentTexture = _idleTexture;
                     _totalFrames = 4;
@@ -429,19 +467,20 @@ namespace GameProject0.Enemies
 
         private void UpdateAttackBox()
         {
-            float attackWidth = 100 * Scale;
-            float attackHeight = 50 * Scale;
-            float yOffset = 50 * Scale;
+            float attackWidth = (FRAME_WIDTH * Scale) * 0.3f;
+            float attackHeight = (FRAME_HEIGHT * Scale) * 0.3f;
+            float yOffset = (FRAME_HEIGHT * Scale) * 0.4f;
             float xOffset;
 
             if (Direction == Direction.Right)
             {
-                xOffset = 60 * Scale;
+                xOffset = (FRAME_WIDTH * Scale) * 0.65f;
             }
             else
             {
-                xOffset = (FRAME_WIDTH * Scale) - (60 * Scale) - attackWidth;
+                xOffset = (FRAME_WIDTH * Scale) * 0.05f;
             }
+
             AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
         }
 

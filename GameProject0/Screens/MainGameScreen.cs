@@ -515,8 +515,9 @@ namespace GameProject0
             _knight = new Knight();
             _knight.LoadContent(_content);
 
-            _knight.Position = new Vector2(viewport.Width - _knight.Width - 100, GROUND_Y - _knight.Height);
-            _knight.Direction = Direction.Left;
+            Vector2 spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _knight.Height);
+            Vector2 targetPos = new Vector2(viewport.Width - _knight.Width - 100, GROUND_Y - _knight.Height);
+            _knight.WalkIn(spawnPos, targetPos, Direction.Left);
 
             _knightHearts.Clear();
             for (int i = 0; i < _knight.Health; i++)
