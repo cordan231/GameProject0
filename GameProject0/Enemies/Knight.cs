@@ -81,6 +81,9 @@ namespace GameProject0.Enemies
         private double _vulnerabilityTimer = 0;
         private int _hitsToTriggerDefend = 0;
 
+        // Attack Cooldowns
+        private double _runAttackCooldown = 0;
+
         public BoundingRectangle Bounds { get; private set; }
         public BoundingRectangle AttackBox { get; private set; }
         public bool IsAttackHitboxActive { get; private set; } = false;
@@ -146,6 +149,12 @@ namespace GameProject0.Enemies
                 return;
             }
 
+            // Update cooldowns
+            if (_runAttackCooldown > 0)
+            {
+                _runAttackCooldown -= dt;
+            }
+
             // Handle Vulnerability Window Logic
             if (_isVulnerableWindow)
             {
@@ -154,7 +163,12 @@ namespace GameProject0.Enemies
                 {
                     _isVulnerableWindow = false;
                     _hitsTakenInWindow = 0;
-                    SetState(KnightState.Walk); // Back to chase
+                    // After vulnerability window expires without enough hits, go back to Run
+                    SetState(KnightState.Run);
+                    Position = _position;
+                    Animate(dt);
+                    UpdateAttackBox();
+                    return; // Don't process state machine this frame
                 }
             }
 
@@ -181,7 +195,7 @@ namespace GameProject0.Enemies
                         if (_position.X <= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Walk);
+                            SetState(KnightState.Run);
                         }
                     }
                     else
@@ -190,7 +204,7 @@ namespace GameProject0.Enemies
                         if (_position.X >= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Walk);
+                            SetState(KnightState.Run);
                         }
                     }
                     Position = _position;
@@ -200,16 +214,15 @@ namespace GameProject0.Enemies
                     if (!_isVulnerableWindow)
                     {
                         _stateTimer -= dt;
-                        if (_stateTimer <= 0) SetState(KnightState.Walk);
+                        if (_stateTimer <= 0)
+                        {
+                            SetState(KnightState.Run);
+                        }
                     }
                     break;
 
                 case KnightState.Walk:
-                    if (distance > RUN_ATTACK_RANGE)
-                    {
-                        SetState(KnightState.Run);
-                    }
-                    else if (distance <= ATTACK_RANGE)
+                    if (distance <= ATTACK_RANGE)
                     {
                         SetState(KnightState.ComboAttack1);
                     }
@@ -220,9 +233,14 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.Run:
-                    if (distance <= RUN_ATTACK_RANGE - 50)
+                    if (distance <= RUN_ATTACK_RANGE && _runAttackCooldown <= 0)
                     {
                         SetState(KnightState.RunAttack);
+                    }
+                    else if (distance <= ATTACK_RANGE)
+                    {
+                        // Close enough for combo attack
+                        SetState(KnightState.ComboAttack1);
                     }
                     else
                     {
@@ -233,7 +251,7 @@ namespace GameProject0.Enemies
                 case KnightState.RunAttack:
                     if (AnimationFinished())
                     {
-                        StartVulnerabilityWindow(3.0, 1);
+                        StartVulnerabilityWindow(3.0, 1); // 3-second vulnerability
                     }
                     break;
 
@@ -260,7 +278,7 @@ namespace GameProject0.Enemies
                         }
                         else
                         {
-                            SetState(KnightState.Walk);
+                            SetState(KnightState.Run);
                         }
                     }
                     break;
@@ -271,7 +289,7 @@ namespace GameProject0.Enemies
                     _position.X += jumpDir * JUMP_SPEED * dt;
                     if (AnimationFinished())
                     {
-                        SetState(KnightState.Walk);
+                        SetState(KnightState.Run);
                     }
                     break;
 
@@ -375,9 +393,8 @@ namespace GameProject0.Enemies
 
         public void SetState(KnightState state)
         {
-            //if (_currentState == state) return;
             if (_currentState == KnightState.Dead) return;
-            if (_currentState == KnightState.Hurt && state != KnightState.Idle) return; // Can only exit Hurt back to Idle
+            if (_currentState == KnightState.Hurt && state != KnightState.Idle) return;
 
             _currentState = state;
             _currentFrame = 0;
@@ -396,6 +413,11 @@ namespace GameProject0.Enemies
                     _currentTexture = _idleTexture;
                     _totalFrames = 4;
                     _animationFrameTime = 0.15;
+                    // If not in vulnerability window, set a short timer to transition to Run
+                    if (!_isVulnerableWindow)
+                    {
+                        _stateTimer = 1.0;
+                    }
                     break;
                 case KnightState.Walk:
                     _currentTexture = _walkTexture;
@@ -431,7 +453,7 @@ namespace GameProject0.Enemies
                     _currentTexture = _defendTexture;
                     _totalFrames = 5;
                     _animationFrameTime = 0.1;
-                    _stateTimer = 3.0; // Defend for 3 seconds
+                    _stateTimer = 3.0;
                     _isInvulnerable = true;
                     break;
                 case KnightState.Jump:
@@ -467,18 +489,18 @@ namespace GameProject0.Enemies
 
         private void UpdateAttackBox()
         {
-            float attackWidth = (FRAME_WIDTH * Scale) * 0.3f;
+            float attackWidth = (FRAME_WIDTH * Scale) * 0.15f;
             float attackHeight = (FRAME_HEIGHT * Scale) * 0.3f;
-            float yOffset = (FRAME_HEIGHT * Scale) * 0.4f;
+            float yOffset = (FRAME_HEIGHT * Scale) * 0.45f;
             float xOffset;
 
             if (Direction == Direction.Right)
             {
-                xOffset = (FRAME_WIDTH * Scale) * 0.65f;
+                xOffset = (FRAME_WIDTH * Scale) * 0.6f;
             }
             else
             {
-                xOffset = (FRAME_WIDTH * Scale) * 0.05f;
+                xOffset = (FRAME_WIDTH * Scale) * 0.15f;
             }
 
             AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
