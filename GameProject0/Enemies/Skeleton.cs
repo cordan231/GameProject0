@@ -65,7 +65,7 @@ namespace GameProject0.Enemies
 
         private double _idleTimer = 2.0;
         private double _postAttackTimer = 0;
-        private bool _postEvasionAttack = false; // Flag to track post-evasion attack
+        private bool _postEvasionAttack = false;
 
         public BoundingRectangle Bounds { get; private set; }
         public List<Arrow> Arrows { get; private set; }
@@ -120,7 +120,6 @@ namespace GameProject0.Enemies
             _deadTexture = content.Load<Texture2D>("skeleton_dead");
             _arrowTexture = content.Load<Texture2D>("arrow_sprite");
 
-            // Set a default state to ensure _currentTexture is never null
             SetState(SkeletonState.Idle);
         }
 
@@ -196,13 +195,13 @@ namespace GameProject0.Enemies
 
                         if (_postEvasionAttack)
                         {
-                            _idleTimer = 3.0; // Start 3-second idle
-                            _postAttackTimer = 0; // Don't evade again
+                            _idleTimer = 3.0;
+                            _postAttackTimer = 0;
                             _postEvasionAttack = false;
                         }
                         else
                         {
-                            _postAttackTimer = 3.0; // Normal 3-second delay before evading
+                            _postAttackTimer = 3.0;
                         }
                         SetState(SkeletonState.Idle);
                     }
@@ -211,16 +210,14 @@ namespace GameProject0.Enemies
                 case SkeletonState.Evasion:
                     _stateTimer -= dt;
 
-                    if (_evasionTargetX > _position.X) // Target is to the right
+                    if (_evasionTargetX > _position.X)
                     {
                         _position.X += EVASION_SPEED * dt;
                         if (_position.X >= _evasionTargetX)
                         {
                             _position.X = _evasionTargetX;
-                            Direction = Direction.Left; // Arrived at right, turn left
-                            // --- FIX ---
+                            Direction = Direction.Left;
                             SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
-                            // --- END FIX ---
                         }
                     }
                     else // Target is to the left
@@ -229,7 +226,7 @@ namespace GameProject0.Enemies
                         if (_position.X <= _evasionTargetX)
                         {
                             _position.X = _evasionTargetX;
-                            Direction = Direction.Right; // Arrived at left, turn right
+                            Direction = Direction.Right;
                             SetState(Random.Shared.Next(2) == 0 ? SkeletonState.Attack1 : SkeletonState.Attack2);
                         }
                     }
@@ -255,7 +252,7 @@ namespace GameProject0.Enemies
                         });
                     }
 
-                    if (_stateTimer <= 0) // Failsafe
+                    if (_stateTimer <= 0)
                     {
                         _position.X = _evasionTargetX;
                         Direction = (_evasionTargetX > 0) ? Direction.Left : Direction.Right;
@@ -324,11 +321,11 @@ namespace GameProject0.Enemies
             float yOffset;
             if (attackType == SkeletonState.Attack1)
             {
-                yOffset = 50 * Scale; // Slightly lower
+                yOffset = 50 * Scale;
             }
             else // Attack2
             {
-                yOffset = 65 * Scale; // Much lower
+                yOffset = 65 * Scale;
             }
 
             float arrowWidth = 48 * 2.0f;

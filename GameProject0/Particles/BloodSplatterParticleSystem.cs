@@ -24,7 +24,7 @@ namespace GameProject0.Particles
         {
             var velocity = RandomHelper.NextDirection() * RandomHelper.NextFloat(50, 250);
             var lifetime = RandomHelper.NextFloat(0.2f, 0.6f);
-            var acceleration = new Vector2(0, 300); // Gravity
+            var acceleration = new Vector2(0, 300);
             var rotation = RandomHelper.NextFloat(0, MathHelper.TwoPi);
             var angularVelocity = RandomHelper.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
             var scale = RandomHelper.NextFloat(0.5f, 1.5f);

@@ -14,10 +14,13 @@ namespace GameProject0
 {
     public class MainGameScreen : IGameScreen
     {
-        // Test comment
+        // Reference to the screen manager
         private ScreenManager _screenManager;
+        // The main player character
         private PlayerSprite _playerSprite;
+        // The level tilemap
         private Tilemap _tilemap;
+        // List of active coins
         private List<Coin> _coins;
         private Random _random;
         private double _coinSpawnTimer;
@@ -28,23 +31,31 @@ namespace GameProject0
         private SoundEffect _coinPickup;
         private Texture2D _whitePixelTexture;
 
+        // Enemy references
         private Minotaur _minotaur;
         private Skeleton _skeleton;
+
+        // Cooldown to prevent spamming attacks instantly
         private bool _attackCooldown = false;
         private double _attackCooldownTimer = 0;
 
+        // Tracks which enemy spawns next
         private SpawnState _nextSpawn = SpawnState.Minotaur;
 
+        // Y-coordinate for the ground level
         private const float GROUND_Y = 3 * 64 * 2.0f;
 
+        // Lists for 3D heart displays
         private List<Heart> _minotaurHearts;
         private List<Heart> _playerHearts;
         private List<Heart> _skeletonHearts;
 
+        // Pause menu state
         private bool _isPaused = false;
         private int _pauseSelection = 0;
         private List<string> _pauseOptions = new List<string> { "RESUME", "EXIT TO MENU" };
 
+        // Initialize variables and lists
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
             _screenManager = screenManager;
@@ -60,6 +71,7 @@ namespace GameProject0
             _skeletonHearts = new List<Heart>();
         }
 
+        // Load assets and set up initial game state
         public void LoadContent()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
@@ -69,11 +81,13 @@ namespace GameProject0
             _spriteFont = _content.Load<SpriteFont>("vcr");
             _coinPickup = _content.Load<SoundEffect>("pickup-coin");
 
+            // Texture for UI boxes
             _whitePixelTexture = new Texture2D(_graphicsDeviceManager.GraphicsDevice, 1, 1);
             _whitePixelTexture.SetData(new[] { Color.White });
 
             _playerSprite.Scale = 1.5f;
 
+            // Set initial player position
             float yOffset = (_playerSprite.Height * 0.4f);
             float boxHeight = (_playerSprite.Height * 0.6f);
             _playerSprite.Position = new Vector2(
@@ -81,7 +95,7 @@ namespace GameProject0
                 GROUND_Y - (yOffset + boxHeight)
             );
 
-            // --- Hearts ---
+            // Initialize hearts
             _playerHearts.Clear();
             for (int i = 0; i < _playerSprite.Health; i++)
             {
@@ -89,19 +103,22 @@ namespace GameProject0
             }
             _skeletonHearts.Clear();
 
-            // --- Spawn First Enemy ---
+            // Spawn the first enemy
             SpawnMinotaur();
         }
 
+        // Main update loop for gameplay
         public void Update(GameTime gameTime, InputManager inputManager)
         {
+            // Toggle pause if requested
             if (inputManager.Exit)
             {
                 _isPaused = !_isPaused;
-                _pauseSelection = 0; // Reset selection when opening menu
+                _pauseSelection = 0;
                 return;
             }
 
+            // Handle Pause Menu Logic
             if (_isPaused)
             {
                 if (inputManager.Direction.Y > 0) _pauseSelection = 1;
@@ -115,6 +132,7 @@ namespace GameProject0
                 return;
             }
 
+            // Check for Game Over
             if (_playerSprite.IsDead)
             {
                 _screenManager.LoadScreen(new GameOverScreen(_score));
@@ -123,12 +141,7 @@ namespace GameProject0
 
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
-            if (inputManager.Exit)
-            {
-                _screenManager.LoadScreen(new TitleScreen());
-                return;
-            }
-
+            // Update attack cooldown
             if (_attackCooldown)
             {
                 _attackCooldownTimer -= gameTime.ElapsedGameTime.TotalSeconds;
@@ -137,11 +150,12 @@ namespace GameProject0
                     _attackCooldown = false;
                 }
             }
+
+            // Save/Load handling
             if (inputManager.Save)
             {
                 SaveGame();
             }
-
             if (inputManager.Load)
             {
                 LoadGame();
@@ -151,7 +165,7 @@ namespace GameProject0
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _playerSprite.Update(gameTime);
 
-            // --- Enemy Updates & Spawning ---
+            // Check if enemies died and spawn new ones
             if (_minotaur != null && _minotaur.IsRemoved)
             {
                 _minotaur = null;
@@ -171,10 +185,10 @@ namespace GameProject0
                 }
             }
 
-            _minotaur?.Update(gameTime, _playerSprite); // Update if minotaur exists
-            _skeleton?.Update(gameTime, viewport); // Update if skeleton exists
+            _minotaur?.Update(gameTime, _playerSprite);
+            _skeleton?.Update(gameTime, viewport);
 
-            // --- Player Input ---
+            // Player Input Handling
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
             {
                 if (inputManager.Roll) _playerSprite.Roll();
@@ -187,39 +201,40 @@ namespace GameProject0
                 else _playerSprite.SetState(CurrentState.Idle);
             }
 
-            // --- Handle Collisions ---
-            // Minotaur
+            // Collision Detection
+            // Minotaur Collisions
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
+                // Player hits Minotaur
                 if (_playerSprite.IsAttacking && !_attackCooldown && _playerSprite.AttackBox.CollidesWith(_minotaur.Bounds))
                 {
                     _attackCooldown = true;
                     _attackCooldownTimer = 0.5;
-                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1, _playerSprite); // <-- MODIFIED: Pass _playerSprite
+                    _minotaur.TakeDamage(Game1.GunModeActive ? 100 : 1, _playerSprite);
                     Game1.Instance.BloodSplatters.Splatter(_minotaur.Bounds.Center);
                 }
+                // Minotaur hits Player
                 if (_minotaur.IsAttackHitboxActive && _minotaur.AttackBox.CollidesWith(_playerSprite.Bounds))
                 {
                     _playerSprite.TakeDamage(_minotaur.Direction);
                 }
             }
-            // Skeleton
+            // Skeleton Collisions
             if (_skeleton != null && !_skeleton.IsRemoved)
             {
+                // Player hits Skeleton
                 if (_playerSprite.IsAttacking && !_attackCooldown && _playerSprite.AttackBox.CollidesWith(_skeleton.Bounds))
                 {
                     _attackCooldown = true;
                     _attackCooldownTimer = 0.5;
                     _skeleton.TakeDamage(Game1.GunModeActive ? 100 : 1);
                 }
+                // Arrows hit Player
                 foreach (var arrow in _skeleton.Arrows)
                 {
                     if (arrow.CollidesWith(_playerSprite))
                     {
-                        // Player's TakeDamage method already checks for invincibility
                         _playerSprite.TakeDamage(arrow.Direction);
-
-                        // Only remove the arrow if the player is NOT invincible (i.e., not rolling)
                         if (!_playerSprite.IsInvincible)
                         {
                             arrow.IsRemoved = true;
@@ -228,7 +243,7 @@ namespace GameProject0
                 }
             }
 
-            // --- Player Movement ---
+            // Apply Player Movement & Bounds Checking
             Vector2 playerNewPos = _playerSprite.Position;
             if (_playerSprite.CurrentPlayerState == CurrentState.Running || _playerSprite.CurrentPlayerState == CurrentState.Idle)
             {
@@ -247,6 +262,7 @@ namespace GameProject0
                 playerNewPos += _playerSprite.KnockbackVelocity * dt;
             }
 
+            // Clamp player to screen
             float scale = _playerSprite.Scale;
             float frameWidth = 128 * scale;
             float boxWidth = frameWidth * 0.35f;
@@ -256,7 +272,7 @@ namespace GameProject0
             playerNewPos.X = Math.Clamp(playerNewPos.X, minX, maxX);
             _playerSprite.Position = playerNewPos;
 
-            // --- Coin Logic ---
+            // Coin Spawning and Collection
             _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
             if (_coinSpawnTimer > 1.0)
             {
@@ -281,14 +297,14 @@ namespace GameProject0
                 }
             }
 
-            // --- 3D Heart Positioning ---
+            // Update 3D Heart Positions
             float angle = (float)gameTime.TotalGameTime.TotalSeconds * 1.5f;
             float worldHalfHeight = 10f * (float)Math.Tan(MathHelper.Pi / 8f);
             float worldHalfWidth = worldHalfHeight * viewport.AspectRatio;
             float heartScale = 0.2f;
             float heartSpacing = 0.8f;
 
-            // Minotaur Hearts
+            // Calculate heart positions for Minotaur
             if (_minotaur != null && !_minotaur.IsRemoved)
             {
                 float pixelX = _minotaur.Position.X + _minotaur.Width / 2;
@@ -304,13 +320,14 @@ namespace GameProject0
             }
             else
             {
+                // Hide hearts if enemy is gone
                 for (int i = 0; i < _minotaurHearts.Count; i++)
                 {
                     _minotaurHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0);
                 }
             }
 
-            // Skeleton Hearts
+            // Calculate heart positions for Skeleton
             if (_skeleton != null && !_skeleton.IsRemoved)
             {
                 float pixelX = _skeleton.Position.X + _skeleton.Width / 2;
@@ -333,17 +350,18 @@ namespace GameProject0
             }
 
 
-            // Player Hearts (Top-Right)
+            // Calculate heart positions for player
             float topEdgeOfView = 3.5f;
             float rightEdgeOfView = 5.5f;
             for (int i = 0; i < _playerHearts.Count; i++)
             {
-                xOffset = rightEdgeOfView - (i * (heartSpacing + 0.2f)); // Player hearts slightly more spaced
+                xOffset = rightEdgeOfView - (i * (heartSpacing + 0.2f));
                 _playerHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
             }
 
         }
 
+        // Helper to spawn a new Minotaur on left or right
         private void SpawnMinotaur()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
@@ -370,6 +388,7 @@ namespace GameProject0
             _minotaur.WalkIn(spawnPos, targetPos, walkInDir);
             _nextSpawn = SpawnState.Skeleton;
 
+            // Reset hearts
             _minotaurHearts.Clear();
             for (int i = 0; i < _minotaur.Health; i++)
             {
@@ -377,6 +396,7 @@ namespace GameProject0
             }
         }
 
+        // Helper to spawn a new Skeleton on left or right
         private void SpawnSkeleton()
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
@@ -403,6 +423,7 @@ namespace GameProject0
             _skeleton.WalkIn(spawnPos, targetPos, walkInDir);
             _nextSpawn = SpawnState.Minotaur;
 
+            // Reset hearts
             _skeletonHearts.Clear();
             for (int i = 0; i < _skeleton.Health; i++)
             {
@@ -410,6 +431,7 @@ namespace GameProject0
             }
         }
 
+        // Draw 2D game elements
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
@@ -424,7 +446,7 @@ namespace GameProject0
                 coin.Draw(spriteBatch);
             }
 
-            // --- Draw Score Box (Back to Top-Left) ---
+            // Draw Score Box
             string scoreText = $"Score: {_score}";
             Vector2 scoreTextSize = _spriteFont.MeasureString(scoreText);
             float padding = 10f;
@@ -448,7 +470,7 @@ namespace GameProject0
             spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139));
             spriteBatch.DrawString(_spriteFont, scoreText, textPosition, Color.White);
 
-            // --- PAUSE MENU OVERLAY ---
+            // Draw Pause Overlay
             if (_isPaused)
             {
                 spriteBatch.Draw(_whitePixelTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * 0.7f);
@@ -470,13 +492,14 @@ namespace GameProject0
 
         }
 
+        // Draw 3D game elements
         public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
         {
             graphicsDevice.BlendState = BlendState.Opaque;
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
             graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
-            // Minotaur Hearts
+            // Draw Minotaur Hearts
             int minotaurHeartsToDraw = 0;
             if (_minotaur != null && !_minotaur.IsRemoved) minotaurHeartsToDraw = _minotaur.Health;
             for (int i = 0; i < minotaurHeartsToDraw; i++)
@@ -484,7 +507,7 @@ namespace GameProject0
                 if (i < _minotaurHearts.Count) _minotaurHearts[i].Draw();
             }
 
-            // Skeleton Hearts
+            // Draw Skeleton Hearts
             int skeletonHeartsToDraw = 0;
             if (_skeleton != null && !_skeleton.IsRemoved) skeletonHeartsToDraw = _skeleton.Health;
             for (int i = 0; i < skeletonHeartsToDraw; i++)
@@ -492,7 +515,7 @@ namespace GameProject0
                 if (i < _skeletonHearts.Count) _skeletonHearts[i].Draw();
             }
 
-            // Player Hearts
+            // Draw Player Hearts
             int playerHeartsToDraw = _playerSprite.Health;
             for (int i = 0; i < playerHeartsToDraw; i++)
             {
@@ -500,6 +523,7 @@ namespace GameProject0
             }
         }
 
+        // Serialize current state to JSON and save
         private void SaveGame()
         {
             var state = new GameState
@@ -537,6 +561,7 @@ namespace GameProject0
             Console.WriteLine("Game Saved!");
         }
 
+        // Deserialize state from JSON and restore game
         private void LoadGame()
         {
             var state = SaveManager.Load();
@@ -549,12 +574,14 @@ namespace GameProject0
             _score = state.Score;
             _nextSpawn = state.NextSpawn;
 
+            // Restore Player
             _playerSprite.SetHealth(state.Player.Health);
             _playerSprite.SetState(state.Player.State);
             _playerSprite.KnockbackVelocity = state.Player.KnockbackVelocity.ToVector2();
             _playerSprite._currentDirection = state.Player.Direction;
             _playerSprite.Position = state.Player.Position.ToVector2();
 
+            // Restore Coins
             _coins.Clear();
             foreach (var pos in state.CoinPositions)
             {
@@ -564,6 +591,7 @@ namespace GameProject0
                 _coins.Add(coin);
             }
 
+            // Restore Minotaur
             if (state.Minotaur != null && !state.Minotaur.IsRemoved)
             {
                 _minotaur = new Minotaur();
@@ -575,6 +603,7 @@ namespace GameProject0
             }
             else _minotaur = null;
 
+            // Restore Skeleton
             if (state.Skeleton != null && !state.Skeleton.IsRemoved)
             {
                 _skeleton = new Skeleton();
@@ -586,7 +615,7 @@ namespace GameProject0
             }
             else _skeleton = null;
 
-            // --- Reload Hearts ---
+            // Re-initialize hearts after load
             _playerHearts.Clear();
             for (int i = 0; i < _playerSprite.Health; i++)
             {
@@ -608,7 +637,6 @@ namespace GameProject0
                     _skeletonHearts.Add(new Heart(Game1.Instance, Color.Green));
                 }
             }
-
 
             Console.WriteLine("Game Loaded!");
         }

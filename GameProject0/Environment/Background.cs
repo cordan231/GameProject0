@@ -23,7 +23,6 @@ namespace GameProject0
             _sandHillsSrc = new Rectangle(321, 143, 192, 16);
             _mountainSrc = new Rectangle(287, 172, 128, 36);
 
-            // Calculate the ground position based on tile size and scale
             GroundY = viewport.Height - (_groundTileSrc.Height * TileScale);
         }
 
@@ -35,9 +34,8 @@ namespace GameProject0
 
             // 1. Draw Mountains (Farthest back)
             float mountainHeight = _mountainSrc.Height * mountainScale;
-            float mountainY = GroundY - mountainHeight + 10; // Position relative to ground
+            float mountainY = GroundY - mountainHeight + 10;
 
-            // Draw a single mountain texture stretched to the screen width
             spriteBatch.Draw(
                 _tilesetTexture,
                 new Rectangle(0, (int)mountainY, viewport.Width, (int)mountainHeight),
@@ -59,7 +57,7 @@ namespace GameProject0
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    hillScale, // Use the new hillScale
+                    hillScale,
                     SpriteEffects.None,
                     0f
                 );

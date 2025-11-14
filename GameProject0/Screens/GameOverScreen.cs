@@ -42,7 +42,7 @@ namespace GameProject0
             if (input.Direction.Y > 0) _selectedIndex = 1;
             if (input.Direction.Y < 0) _selectedIndex = 0;
 
-            // Selection (Using 'E' as established in Step 1)
+            // Selection
             if (input.Attack || input.Select)
             {
                 if (_selectedIndex == 0)

@@ -9,17 +9,31 @@ namespace GameProject0
 {
     public class Game1 : Game
     {
+        // Graphics manager for the game window
         private GraphicsDeviceManager _graphics;
+
+        // Sprite batch for rendering 2D sprites
         private SpriteBatch _spriteBatch;
+
+        // Manages different screens in the game
         private ScreenManager _screenManager;
+
+        // Manages user input
         private InputManager _inputManager;
+
+        // Background music for the game
         private Song _backgroundMusic;
 
+        // Singleton instance of the game
         public static Game1 Instance { get; private set; }
+
+        // Particle system for blood splatters
         public BloodSplatterParticleSystem BloodSplatters { get; private set; }
 
+        // Indicates whether gun mode is active
         public static bool GunModeActive { get; set; } = false;
 
+        // Screen shake variables
         private float _screenShakeTimer = 0;
         private float _screenShakeMagnitude = 0;
         private Random _random = new Random();
@@ -34,6 +48,7 @@ namespace GameProject0
             _inputManager = new InputManager();
         }
 
+        // Initialize game components
         protected override void Initialize()
         {
             _screenManager.Initialize(Content, _graphics);
@@ -44,6 +59,7 @@ namespace GameProject0
             base.Initialize();
         }
 
+        // Load game content
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -54,6 +70,7 @@ namespace GameProject0
 
         }
 
+        // Update game logic
         protected override void Update(GameTime gameTime)
         {
             _inputManager.Update(gameTime);
@@ -73,12 +90,14 @@ namespace GameProject0
             base.Update(gameTime);
         }
 
+        // Trigger a screen shake effect
         public void ShakeScreen(float magnitude, float duration)
         {
             _screenShakeMagnitude = magnitude;
             _screenShakeTimer = duration;
         }
 
+        // Draw game elements
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.PaleTurquoise);

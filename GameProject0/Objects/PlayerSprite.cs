@@ -5,6 +5,7 @@ using GameProject0.Collisions;
 
 namespace GameProject0
 {
+    // Defines the possible states of the player
     public enum CurrentState
     {
         Idle,
@@ -15,6 +16,7 @@ namespace GameProject0
         Dead
     }
 
+    // Defines the facing direction
     public enum Direction
     {
         Left,
@@ -23,6 +25,7 @@ namespace GameProject0
 
     public class PlayerSprite
     {
+        // Textures for standard mode
         private Texture2D _idleTexture;
         private Texture2D _runningTexture;
         private Texture2D _attackTexture;
@@ -30,6 +33,7 @@ namespace GameProject0
         private Texture2D _hurtTexture;
         private Texture2D _deathTexture;
 
+        // Textures for gun mode
         private Texture2D _gunIdleTexture;
         private Texture2D _gunRunningTexture;
         private Texture2D _gunAttackTexture;
@@ -42,16 +46,22 @@ namespace GameProject0
         public Direction _currentDirection;
         private CurrentState _currentState;
         public CurrentState CurrentPlayerState => _currentState;
+
+        // Animation variables
         private Texture2D _currentTexture;
         private int _currentFrame;
         private int _totalFrames;
         private double _frameTimer;
 
+        // Physics variables
         public Vector2 KnockbackVelocity { get; set; }
         private const float KNOCKBACK_SPEED = 250f;
 
+        // Timer to lock the player in a state (e.g., during attack animation)
         private double _stateTimer;
+        // Cooldown to prevent taking damage repeatedly too fast
         private double _hurtCooldown;
+
         public bool IsAttacking => _currentState == CurrentState.Attacking;
         public BoundingRectangle AttackBox { get; private set; }
 
@@ -72,6 +82,7 @@ namespace GameProject0
 
         public BoundingRectangle Bounds { get; private set; }
 
+        // Properties to get/set position and update collision box
         public Vector2 Position
         {
             get => _position;
@@ -79,6 +90,7 @@ namespace GameProject0
             {
                 _position = value;
 
+                // Define collision box size smaller than sprite
                 float boxWidth = (FRAME_WIDTH * Scale) * 0.35f;
                 float boxHeight = (FRAME_HEIGHT * Scale) * 0.6f;
 
@@ -97,6 +109,7 @@ namespace GameProject0
         public float Width => FRAME_WIDTH * Scale;
         public float Height => FRAME_HEIGHT * Scale;
 
+        // Load all player textures
         public void LoadContent(ContentManager content)
         {
             _idleTexture = content.Load<Texture2D>("Stop_Running");
@@ -122,6 +135,7 @@ namespace GameProject0
             SetState(CurrentState.Idle);
         }
 
+        // Update player logic
         public void Update(GameTime gameTime)
         {
             if (_hurtCooldown > 0)
@@ -129,16 +143,19 @@ namespace GameProject0
                 _hurtCooldown -= gameTime.ElapsedGameTime.TotalSeconds;
             }
 
+            // Animation Logic
             _frameTimer += gameTime.ElapsedGameTime.TotalMilliseconds;
             if (_frameTimer > FRAME_TIME_MS)
             {
                 _currentFrame++;
                 if (_currentFrame >= _totalFrames)
                 {
+                    // Reset to Idle after animations
                     if (_currentState == CurrentState.Attacking || _currentState == CurrentState.Rolling || _currentState == CurrentState.Hurt)
                     {
                         SetState(CurrentState.Idle);
                     }
+                    // Stay on last frame if dead
                     if (_currentState == CurrentState.Dead)
                     {
                         IsDead = true;
@@ -152,17 +169,10 @@ namespace GameProject0
                 _frameTimer = 0;
             }
 
+            // Rolling Invincibility Logic
             if (_currentState == CurrentState.Rolling)
             {
-                if (Game1.GunModeActive)
-                {
-                    IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
-                }
-                else
-                {
-                    IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
-                }
-
+                IsInvincible = (_currentFrame >= 1 && _currentFrame <= 6);
             }
             else
             {
@@ -180,6 +190,7 @@ namespace GameProject0
             UpdateAttackBox();
         }
 
+        // Attack
         public void Attack()
         {
             if (_currentState == CurrentState.Idle || _currentState == CurrentState.Running)
@@ -188,6 +199,7 @@ namespace GameProject0
             }
         }
 
+        // Roll
         public void Roll()
         {
             if (_currentState == CurrentState.Idle || _currentState == CurrentState.Running)
@@ -196,6 +208,7 @@ namespace GameProject0
             }
         }
 
+        // Handle taking damage and applying knockback
         public void TakeDamage(Direction hitDirection)
         {
             if (IsInvincible || _currentState == CurrentState.Hurt || _currentState == CurrentState.Dead || _hurtCooldown > 0) return;
@@ -211,16 +224,18 @@ namespace GameProject0
             else
             {
                 SetState(CurrentState.Hurt);
+                // Knockback away from the hit
                 float knockbackDirection = (hitDirection == Direction.Right) ? 1 : -1;
                 KnockbackVelocity = new Vector2(KNOCKBACK_SPEED * knockbackDirection, 0);
             }
         }
 
-
+        // Update the area where the player deals damage
         private void UpdateAttackBox()
         {
             if (Game1.GunModeActive)
             {
+                // Gun mode: Long range box
                 float fireRange = 5000f;
                 float fireHeight = 20f;
                 float yOffset = 40 * Scale;
@@ -237,6 +252,7 @@ namespace GameProject0
             }
             else
             {
+                // Punch mode: Short range box
                 float attackWidth = 60 * Scale;
                 float attackHeight = 30 * Scale;
                 float yOffset = 40 * Scale;
@@ -254,27 +270,24 @@ namespace GameProject0
             }
         }
 
+        // Change player state and load appropriate texture
         public void SetState(CurrentState state)
         {
-            if (_currentState == state) return; // If we are already in this state, do nothing.
-            if (_currentState == CurrentState.Dead) return; // Cannot leave Dead state
+            if (_currentState == state) return;
+            if (_currentState == CurrentState.Dead) return;
 
-            // Prevent state changes while in an uninterruptible animation
+            // Prevent interrupting specific animations unless dying
             if ((_currentState == CurrentState.Attacking || _currentState == CurrentState.Rolling || _currentState == CurrentState.Hurt) && _stateTimer > 0)
             {
-                // ...unless it's a "forceful" state change like dying
-                if (state != CurrentState.Dead)
-                {
-                    return;
-                }
+                if (state != CurrentState.Dead) return;
             }
-
 
             _currentState = state;
             _currentFrame = 0;
             _frameTimer = 0;
-            _stateTimer = 0; // This timer is now used for animation locks
+            _stateTimer = 0;
 
+            // Switch logic for Gun Mode vs Normal Mode
             switch (state)
             {
                 case CurrentState.Idle:
@@ -314,7 +327,7 @@ namespace GameProject0
                         _currentTexture = _attackTexture;
                         _totalFrames = 4;
                     }
-                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0; // Lock state for animation duration
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
                     break;
                 case CurrentState.Rolling:
                     if (Game1.GunModeActive)
@@ -327,7 +340,7 @@ namespace GameProject0
                         _currentTexture = _rollTexture;
                         _totalFrames = 9;
                     }
-                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0; // Lock state for animation duration
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0;
                     break;
                 case CurrentState.Hurt:
                     if (Game1.GunModeActive)
@@ -340,7 +353,7 @@ namespace GameProject0
                         _currentTexture = _hurtTexture;
                         _totalFrames = 3;
                     }
-                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0 * 2; // Lock state for animation duration
+                    _stateTimer = (_totalFrames * FRAME_TIME_MS) / 1000.0 * 2;
                     break;
                 case CurrentState.Dead:
                     if (Game1.GunModeActive)
@@ -357,6 +370,7 @@ namespace GameProject0
             }
         }
 
+        // Sets facing direction
         public void SetDirection(Direction direction)
         {
             if (_currentState != CurrentState.Attacking && _currentState != CurrentState.Rolling && _currentState != CurrentState.Hurt)
@@ -365,6 +379,7 @@ namespace GameProject0
             }
         }
 
+        // Draw player sprite
         public void Draw(SpriteBatch spriteBatch)
         {
             if (IsDead && _currentFrame >= _totalFrames - 1) return;

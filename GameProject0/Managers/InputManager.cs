@@ -5,6 +5,7 @@ namespace GameProject0
 {
     public class InputManager
     {
+        // Store current and previous keyboard states
         private KeyboardState _currentKeyboardState;
         private KeyboardState _priorKeyboardState;
 
@@ -20,6 +21,7 @@ namespace GameProject0
 
         public bool GunModeToggle { get; private set; } = false;
 
+        // Update input states
         public void Update(GameTime gameTime)
         {
             _priorKeyboardState = _currentKeyboardState;
@@ -34,6 +36,7 @@ namespace GameProject0
             Load = false;
             GunModeToggle = false;
 
+            // Movement
             if (_currentKeyboardState.IsKeyDown(Keys.Left) || _currentKeyboardState.IsKeyDown(Keys.A))
             {
                 Direction += new Vector2(-1, 0);
@@ -42,7 +45,6 @@ namespace GameProject0
             {
                 Direction += new Vector2(1, 0);
             }
-
             if (_currentKeyboardState.IsKeyDown(Keys.Up) || _currentKeyboardState.IsKeyDown(Keys.W))
             {
                 Direction += new Vector2(0, -1);
@@ -52,6 +54,7 @@ namespace GameProject0
                 Direction += new Vector2(0, 1);
             }
 
+            // Single press checks
             if (_currentKeyboardState.IsKeyDown(Keys.Enter) && _priorKeyboardState.IsKeyUp(Keys.Enter))
             {
                 Select = true;

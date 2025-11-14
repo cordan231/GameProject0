@@ -24,12 +24,11 @@ namespace GameProject0
 
         private void InitializeVertices()
         {
-            // Create a darker shade for the back
             var darkColor = Color.Lerp(_color, Color.Black, 0.5f);
 
             var vertexData = new VertexPositionColor[]
             {
-                // Front Face (use the new _color)
+                // Front Face
                 new VertexPositionColor(new Vector3(0, 0, 0), _color), // 0
                 new VertexPositionColor(new Vector3(-1, 1, 0), _color), // 1
                 new VertexPositionColor(new Vector3(-2, 0, 0), _color), // 2
@@ -37,7 +36,7 @@ namespace GameProject0
                 new VertexPositionColor(new Vector3(2, 0, 0), _color), // 4
                 new VertexPositionColor(new Vector3(1, 1, 0), _color), // 5
 
-                // Back Face (use the new darkColor)
+                // Back Face
                 new VertexPositionColor(new Vector3(0, 0, -1), darkColor), // 6
                 new VertexPositionColor(new Vector3(-1, 1, -1), darkColor), // 7
                 new VertexPositionColor(new Vector3(-2, 0, -1), darkColor), // 8
