@@ -14,6 +14,13 @@ namespace GameProject0
 {
     public class MainGameScreen : IGameScreen
     {
+        // ##### BOSS FIGHT TEST #####
+        // Set to true to fight the boss immediately.
+        // This will disable Minotaur, Skeleton, and Coin spawns.
+        private bool _bossFightMode = true;
+        // ###########################
+
+
         // Reference to the screen manager
         private ScreenManager _screenManager;
         // The main player character
@@ -34,6 +41,7 @@ namespace GameProject0
         // Enemy references
         private Minotaur _minotaur;
         private Skeleton _skeleton;
+        private Knight _knight; // The new boss
 
         // Cooldown to prevent spamming attacks instantly
         private bool _attackCooldown = false;
@@ -49,6 +57,7 @@ namespace GameProject0
         private List<Heart> _minotaurHearts;
         private List<Heart> _playerHearts;
         private List<Heart> _skeletonHearts;
+        private List<Heart> _knightHearts; // Boss hearts
 
         // Pause menu state
         private bool _isPaused = false;
@@ -69,6 +78,7 @@ namespace GameProject0
             _minotaurHearts = new List<Heart>();
             _playerHearts = new List<Heart>();
             _skeletonHearts = new List<Heart>();
+            _knightHearts = new List<Heart>(); // Init boss hearts list
         }
 
         // Load assets and set up initial game state
@@ -102,9 +112,18 @@ namespace GameProject0
                 _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
             }
             _skeletonHearts.Clear();
+            _minotaurHearts.Clear();
+            _knightHearts.Clear();
 
             // Spawn the first enemy
-            SpawnMinotaur();
+            if (_bossFightMode)
+            {
+                SpawnKnight();
+            }
+            else
+            {
+                SpawnMinotaur();
+            }
         }
 
         // Main update loop for gameplay
@@ -166,27 +185,43 @@ namespace GameProject0
             _playerSprite.Update(gameTime);
 
             // Check if enemies died and spawn new ones
-            if (_minotaur != null && _minotaur.IsRemoved)
+            if (!_bossFightMode)
             {
-                _minotaur = null;
-                if (_nextSpawn == SpawnState.Skeleton)
+                if (_minotaur != null && _minotaur.IsRemoved)
                 {
-                    _score += 25;
-                    SpawnSkeleton();
+                    _minotaur = null;
+                    if (_nextSpawn == SpawnState.Skeleton)
+                    {
+                        _score += 25;
+                        SpawnSkeleton();
+                    }
+                }
+                if (_skeleton != null && _skeleton.IsRemoved)
+                {
+                    _skeleton = null;
+                    if (_nextSpawn == SpawnState.Minotaur)
+                    {
+                        _score += 25;
+                        SpawnMinotaur();
+                    }
                 }
             }
-            if (_skeleton != null && _skeleton.IsRemoved)
+            else
             {
-                _skeleton = null;
-                if (_nextSpawn == SpawnState.Minotaur)
+                // Boss fight mode: Check if boss is defeated
+                if (_knight != null && _knight.IsRemoved)
                 {
-                    _score += 25;
-                    SpawnMinotaur();
+                    _knight = null;
+                    _score += 1000; // Big score for boss
+                    // You could transition to a victory screen or back to normal mode here
+                    // For now, we'll just stop spawning
                 }
             }
 
+
             _minotaur?.Update(gameTime, _playerSprite);
             _skeleton?.Update(gameTime, viewport);
+            _knight?.Update(gameTime, _playerSprite);
 
             // Player Input Handling
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
@@ -242,6 +277,23 @@ namespace GameProject0
                     }
                 }
             }
+            // Knight Boss Collisions
+            if (_knight != null && !_knight.IsRemoved)
+            {
+                // Player hits Knight
+                if (_playerSprite.IsAttacking && !_attackCooldown && _playerSprite.AttackBox.CollidesWith(_knight.Bounds))
+                {
+                    _attackCooldown = true;
+                    _attackCooldownTimer = 0.5;
+                    _knight.TakeDamage(1);
+                }
+                // Knight hits Player
+                if (_knight.IsAttackHitboxActive && _knight.AttackBox.CollidesWith(_playerSprite.Bounds))
+                {
+                    _playerSprite.TakeDamage(_knight.Direction);
+                }
+            }
+
 
             // Apply Player Movement & Bounds Checking
             Vector2 playerNewPos = _playerSprite.Position;
@@ -272,15 +324,18 @@ namespace GameProject0
             playerNewPos.X = Math.Clamp(playerNewPos.X, minX, maxX);
             _playerSprite.Position = playerNewPos;
 
-            // Coin Spawning and Collection
-            _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
-            if (_coinSpawnTimer > 1.0)
+            // Coin Spawning and Collection (Disabled in Boss Mode)
+            if (!_bossFightMode)
             {
-                _coinSpawnTimer = 0;
-                var coin = new Coin();
-                coin.LoadContent(_content);
-                coin.Position = new Vector2(_random.Next(0, _graphicsDeviceManager.GraphicsDevice.Viewport.Width - 64), -64);
-                _coins.Add(coin);
+                _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
+                if (_coinSpawnTimer > 1.0)
+                {
+                    _coinSpawnTimer = 0;
+                    var coin = new Coin();
+                    coin.LoadContent(_content);
+                    coin.Position = new Vector2(_random.Next(0, _graphicsDeviceManager.GraphicsDevice.Viewport.Width - 64), -64);
+                    _coins.Add(coin);
+                }
             }
             for (int i = _coins.Count - 1; i >= 0; i--)
             {
@@ -346,6 +401,28 @@ namespace GameProject0
                 for (int i = 0; i < _skeletonHearts.Count; i++)
                 {
                     _skeletonHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0);
+                }
+            }
+
+            // Calculate heart positions for Knight Boss
+            if (_knight != null && !_knight.IsRemoved)
+            {
+                float pixelX = _knight.Position.X + _knight.Width / 2;
+                float pixelY = _knight.Position.Y + 30;
+                float worldX = (pixelX - viewport.Width / 2) / (viewport.Width / 2) * worldHalfWidth;
+                float worldY = -(pixelY - viewport.Height / 2) / (viewport.Height / 2) * worldHalfHeight;
+                Vector3 basePosition = new Vector3(worldX, worldY, 0);
+                for (int i = 0; i < _knightHearts.Count; i++)
+                {
+                    xOffset = (i - (_knightHearts.Count - 1) / 2.0f) * heartSpacing;
+                    _knightHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < _knightHearts.Count; i++)
+                {
+                    _knightHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0);
                 }
             }
 
@@ -431,6 +508,23 @@ namespace GameProject0
             }
         }
 
+        // Helper to spawn the Knight Boss
+        private void SpawnKnight()
+        {
+            var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
+            _knight = new Knight();
+            _knight.LoadContent(_content);
+
+            _knight.Position = new Vector2(viewport.Width - _knight.Width - 100, GROUND_Y - _knight.Height);
+            _knight.Direction = Direction.Left;
+
+            _knightHearts.Clear();
+            for (int i = 0; i < _knight.Health; i++)
+            {
+                _knightHearts.Add(new Heart(Game1.Instance, Color.Purple));
+            }
+        }
+
         // Draw 2D game elements
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
@@ -440,6 +534,7 @@ namespace GameProject0
             _playerSprite.Draw(spriteBatch);
             _minotaur?.Draw(spriteBatch);
             _skeleton?.Draw(spriteBatch);
+            _knight?.Draw(spriteBatch);
 
             foreach (var coin in _coins)
             {
@@ -515,6 +610,15 @@ namespace GameProject0
                 if (i < _skeletonHearts.Count) _skeletonHearts[i].Draw();
             }
 
+            // Draw Knight Hearts
+            int knightHeartsToDraw = 0;
+            if (_knight != null && !_knight.IsRemoved) knightHeartsToDraw = _knight.Health;
+            for (int i = 0; i < knightHeartsToDraw; i++)
+            {
+                if (i < _knightHearts.Count) _knightHearts[i].Draw();
+            }
+
+
             // Draw Player Hearts
             int playerHeartsToDraw = _playerSprite.Health;
             for (int i = 0; i < playerHeartsToDraw; i++)
@@ -556,6 +660,8 @@ namespace GameProject0
                 },
                 NextSpawn = _nextSpawn
             };
+            // Note: Knight state is not saved in this example.
+            // You would add a KnightData class to GameState.cs to save it.
 
             SaveManager.Save(state);
             Console.WriteLine("Game Saved!");
@@ -570,6 +676,9 @@ namespace GameProject0
                 Console.WriteLine("Load failed or no save found.");
                 return;
             }
+
+            // Disable boss fight mode when loading a normal game
+            _bossFightMode = false;
 
             _score = state.Score;
             _nextSpawn = state.NextSpawn;
@@ -615,6 +724,9 @@ namespace GameProject0
             }
             else _skeleton = null;
 
+            // Clear boss
+            _knight = null;
+
             // Re-initialize hearts after load
             _playerHearts.Clear();
             for (int i = 0; i < _playerSprite.Health; i++)
@@ -637,6 +749,7 @@ namespace GameProject0
                     _skeletonHearts.Add(new Heart(Game1.Instance, Color.Green));
                 }
             }
+            _knightHearts.Clear();
 
             Console.WriteLine("Game Loaded!");
         }
