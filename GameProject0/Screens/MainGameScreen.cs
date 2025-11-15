@@ -221,7 +221,9 @@ namespace GameProject0
 
             _minotaur?.Update(gameTime, _playerSprite);
             _skeleton?.Update(gameTime, viewport);
-            _knight?.Update(gameTime, _playerSprite);
+
+            // Tweak 3: Pass viewport to Knight's Update
+            _knight?.Update(gameTime, _playerSprite, viewport);
 
             // Player Input Handling
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
@@ -412,10 +414,21 @@ namespace GameProject0
                 float worldX = (pixelX - viewport.Width / 2) / (viewport.Width / 2) * worldHalfWidth;
                 float worldY = -(pixelY - viewport.Height / 2) / (viewport.Height / 2) * worldHalfHeight;
                 Vector3 basePosition = new Vector3(worldX, worldY, 0);
+
+                int currentHealth = _knight.Health; // Get current health
                 for (int i = 0; i < _knightHearts.Count; i++)
                 {
-                    xOffset = (i - (_knightHearts.Count - 1) / 2.0f) * heartSpacing;
-                    _knightHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(xOffset, 0, 0));
+                    if (i < currentHealth)
+                    {
+                        // Tweak 1: Center hearts based on *current* health
+                        float heartXOffset = (i - (currentHealth - 1) / 2.0f) * heartSpacing;
+                        _knightHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(basePosition + new Vector3(heartXOffset, 0, 0));
+                    }
+                    else
+                    {
+                        // Hide hearts that are "dead"
+                        _knightHearts[i].World = Matrix.CreateTranslation(-1000, -1000, 0);
+                    }
                 }
             }
             else

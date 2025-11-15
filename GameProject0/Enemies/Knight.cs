@@ -80,27 +80,24 @@ namespace GameProject0.Enemies
         private const float WALK_IN_SPEED = 200f;
 
         // --- Combo Attack 1: Timings & Speeds ---
-        // Spec: 0.1, 0.1, 0.1, 0.1, 0.2 (using your provided values)
-        private static readonly double[] COMBO1_FRAME_TIMINGS = new double[] { 0.15, 0.15, 0.15, 0.25, 0.25 };
-        private const float COMBO1_LUNGE_SPEED = 300f;
+        private static readonly double[] COMBO1_FRAME_TIMINGS = new double[] { 0.1, 0.1, 0.1, 0.15, 0.25 };
+        private const float COMBO1_LUNGE_DISTANCE = 150f;
 
         // --- Combo Attack 2: Timings & Speeds ---
-        // Spec: 0.1, 0.1, 0.15, 0.15 (using your provided values)
-        private static readonly double[] COMBO2_FRAME_TIMINGS = new double[] { 0.2, 0.2, 0.2, 0.3 };
-        private const float COMBO2_LUNGE_SPEED = 300f;
+        private static readonly double[] COMBO2_FRAME_TIMINGS = new double[] { 0.25, 0.25, 0.25, 0.4 };
+        private const float COMBO2_LUNGE_DISTANCE = 400f;
 
         // --- Combo Attack 3: Timings & Speeds ---
-        // Spec: 0.2, 0.2, (fast lunge), 0.1 (using your provided values)
-        private static readonly double[] COMBO3_FRAME_TIMINGS = new double[] { 0.2, 0.2, 0.3, 0.1 };
-        private const float COMBO3_RETREAT_SPEED = -500f;
-        private const float COMBO3_LUNGE_SPEED = 2000f;
+        private static readonly double[] COMBO3_FRAME_TIMINGS = new double[] { 0.25, 0.25, 0.3, 0.1 };
+        private const float COMBO3_RETREAT_DISTANCE = -500f;
+        private const float COMBO3_LUNGE_DISTANCE = 2000f;
 
         // ####################################################################
 
         // Vulnerability Windows
         private bool _isVulnerableWindow = false;
         private int _hitsTakenInWindow = 0;
- a      private double _vulnerabilityTimer = 0;
+        private double _vulnerabilityTimer = 0;
         private int _hitsToTriggerDefend = 0;
 
         // Attack Cooldowns
@@ -152,7 +149,8 @@ namespace GameProject0.Enemies
             SetState(KnightState.WalkingIn);
         }
 
-        public void Update(GameTime gameTime, PlayerSprite player)
+        // Tweak 3: Added Viewport parameter
+        public void Update(GameTime gameTime, PlayerSprite player, Viewport viewport)
         {
             if (IsRemoved) return;
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -170,7 +168,6 @@ namespace GameProject0.Enemies
 
             if (_currentState == KnightState.Dead)
             {
-                // AnimationFinished check is now (>= _totalFrames)
                 if (AnimationFinished()) IsRemoved = true;
                 return;
             }
@@ -287,7 +284,7 @@ namespace GameProject0.Enemies
                     // Spec: Still frame 0
                     if (_currentFrame >= 1 && _currentFrame <= 3) // Spec: Move frames 1, 2, 3
                     {
-                        _position.X += (Direction == Direction.Right ? COMBO1_LUNGE_SPEED : -COMBO1_LUNGE_SPEED) * dt;
+                        _position.X += (Direction == Direction.Right ? COMBO1_LUNGE_DISTANCE : -COMBO1_LUNGE_DISTANCE) * dt;
                     }
                     // Spec: Still frame 4
                     if (AnimationFinished())
@@ -300,7 +297,7 @@ namespace GameProject0.Enemies
                 case KnightState.ComboAttack2:
                     if (_currentFrame == 0 || _currentFrame == 1) // Spec: Move frames 0, 1
                     {
-                        _position.X += (Direction == Direction.Right ? COMBO2_LUNGE_SPEED : -COMBO2_LUNGE_SPEED) * dt;
+                        _position.X += (Direction == Direction.Right ? COMBO2_LUNGE_DISTANCE : -COMBO2_LUNGE_DISTANCE) * dt;
                     }
                     // Spec: Still frames 2, 3
                     if (AnimationFinished())
@@ -313,11 +310,11 @@ namespace GameProject0.Enemies
                 case KnightState.ComboAttack3:
                     if (_currentFrame == 0 || _currentFrame == 1) // Spec: Move back frames 0, 1
                     {
-                        _position.X += (Direction == Direction.Right ? COMBO3_RETREAT_SPEED : -COMBO3_RETREAT_SPEED) * dt;
+                        _position.X += (Direction == Direction.Right ? COMBO3_RETREAT_DISTANCE : -COMBO3_RETREAT_DISTANCE) * dt;
                     }
                     else if (_currentFrame == 2) // Spec: Lunge hard frame 2
                     {
-                        _position.X += (Direction == Direction.Right ? COMBO3_LUNGE_SPEED : -COMBO3_LUNGE_SPEED) * dt;
+                        _position.X += (Direction == Direction.Right ? COMBO3_LUNGE_DISTANCE : -COMBO3_LUNGE_DISTANCE) * dt;
                     }
                     // Spec: Still frame 3
                     if (AnimationFinished())
@@ -359,6 +356,9 @@ namespace GameProject0.Enemies
                     break;
             }
 
+            // Tweak 3: Clamp position to screen boundaries
+            _position.X = Math.Clamp(_position.X, 0, viewport.Width - Width);
+
             Position = _position;
             UpdateAttackBox();
         }
@@ -374,11 +374,9 @@ namespace GameProject0.Enemies
 
         private void Animate(float dt)
         {
-            // If animation is finished (e.g. _currentFrame == _totalFrames), don't advance timer
             if (_currentFrame >= _totalFrames)
             {
-                // But we still need to update hitbox logic for the held frame
-                IsAttackHitboxActive = false; // Turn off hitbox once anim is done
+                IsAttackHitboxActive = false;
                 return;
             }
 
@@ -390,26 +388,18 @@ namespace GameProject0.Enemies
 
                 if (_currentFrame >= _totalFrames)
                 {
-                    // Animation has *just* finished
                     switch (_currentState)
                     {
-                        // Looping animations
                         case KnightState.WalkingIn:
                         case KnightState.Idle:
                         case KnightState.Walk:
                         case KnightState.Run:
-                            _currentFrame = 0; // These loop
+                            _currentFrame = 0;
                             break;
-
-                            // For non-looping, _currentFrame will now be == _totalFrames,
-                            // which AnimationFinished() will detect.
-                            // We don't cap it to _totalFrames - 1 anymore.
                     }
                 }
             }
 
-            // --- Hitbox Logic ---
-            // Need to check against a valid frame index
             int frameToCheck = _currentFrame;
             if (frameToCheck >= _totalFrames)
             {
@@ -418,9 +408,9 @@ namespace GameProject0.Enemies
 
             IsAttackHitboxActive = _currentState switch
             {
-                KnightState.ComboAttack1 => frameToCheck == 4, // Spec: Only last frame
-                KnightState.ComboAttack2 => frameToCheck == 2, // Spec: Only third frame
-                KnightState.ComboAttack3 => frameToCheck == 2, // Spec: Only third frame (lunge)
+                KnightState.ComboAttack1 => frameToCheck == 4,
+                KnightState.ComboAttack2 => frameToCheck == 2,
+                KnightState.ComboAttack3 => frameToCheck == 2,
                 KnightState.RunAttack => frameToCheck == 3 || frameToCheck == 4,
                 _ => false
             };
@@ -429,7 +419,6 @@ namespace GameProject0.Enemies
 
         private bool AnimationFinished()
         {
-            // NEW: Animation is finished when the frame counter is AT OR BEYOND total frames
             return _currentFrame >= _totalFrames;
         }
 
@@ -614,11 +603,9 @@ namespace GameProject0.Enemies
         {
             if (IsRemoved) return;
 
-            // NEW: Cap the frame here for drawing, so we don't go out of bounds
             int frameToDraw = _currentFrame;
             if (frameToDraw >= _totalFrames)
             {
-                // If animation is done, draw the last frame
                 frameToDraw = _totalFrames - 1;
             }
 
