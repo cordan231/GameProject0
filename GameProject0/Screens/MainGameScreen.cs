@@ -14,10 +14,9 @@ namespace GameProject0
 {
     public class MainGameScreen : IGameScreen
     {
-        // ##### BOSS FIGHT TEST #####
-        // Set to true to fight the boss immediately.
-        // This will disable Minotaur, Skeleton, and Coin spawns.
-        private bool _bossFightMode = true;
+        // ##### BOSS FIGHT STATUS #####
+        private bool _bossFightActive = false;
+        private bool _bossHasBeenDefeated = false;
         // ###########################
 
 
@@ -116,14 +115,7 @@ namespace GameProject0
             _knightHearts.Clear();
 
             // Spawn the first enemy
-            if (_bossFightMode)
-            {
-                SpawnKnight();
-            }
-            else
-            {
-                SpawnMinotaur();
-            }
+            SpawnMinotaur();
         }
 
         // Main update loop for gameplay
@@ -185,36 +177,52 @@ namespace GameProject0
             _playerSprite.Update(gameTime);
 
             // Check if enemies died and spawn new ones
-            if (!_bossFightMode)
+            if (!_bossFightActive) // Normal enemy loop
             {
                 if (_minotaur != null && _minotaur.IsRemoved)
                 {
                     _minotaur = null;
-                    if (_nextSpawn == SpawnState.Skeleton)
+                    _score += 25;
+
+                    if (_score >= 100 && !_bossHasBeenDefeated)
                     {
-                        _score += 25;
+                        _bossFightActive = true;
+                        SpawnKnight();
+                    }
+                    else if (_nextSpawn == SpawnState.Skeleton)
+                    {
                         SpawnSkeleton();
                     }
                 }
                 if (_skeleton != null && _skeleton.IsRemoved)
                 {
                     _skeleton = null;
-                    if (_nextSpawn == SpawnState.Minotaur)
+                    _score += 25;
+
+                    if (_score >= 100 && !_bossHasBeenDefeated)
                     {
-                        _score += 25;
+                        _bossFightActive = true;
+                        SpawnKnight();
+                    }
+                    else if (_nextSpawn == SpawnState.Minotaur)
+                    {
                         SpawnMinotaur();
                     }
                 }
             }
-            else
+            else // Boss fight is active
             {
                 // Boss fight mode: Check if boss is defeated
                 if (_knight != null && _knight.IsRemoved)
                 {
                     _knight = null;
                     _score += 1000; // Big score for boss
-                    // You could transition to a victory screen or back to normal mode here
-                    // For now, we'll just stop spawning
+                    _bossFightActive = false; // Resume normal loop
+                    _bossHasBeenDefeated = true; // Don't spawn boss again
+
+                    // Spawn the next enemy to restart the loop
+                    if (_nextSpawn == SpawnState.Minotaur) SpawnMinotaur();
+                    else SpawnSkeleton();
                 }
             }
 
@@ -222,7 +230,6 @@ namespace GameProject0
             _minotaur?.Update(gameTime, _playerSprite);
             _skeleton?.Update(gameTime, viewport);
 
-            // Tweak 3: Pass viewport to Knight's Update
             _knight?.Update(gameTime, _playerSprite, viewport);
 
             // Player Input Handling
@@ -327,7 +334,7 @@ namespace GameProject0
             _playerSprite.Position = playerNewPos;
 
             // Coin Spawning and Collection (Disabled in Boss Mode)
-            if (!_bossFightMode)
+            if (!_bossFightActive)
             {
                 _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
                 if (_coinSpawnTimer > 1.0)
@@ -528,9 +535,15 @@ namespace GameProject0
             _knight = new Knight();
             _knight.LoadContent(_content);
 
+            // ALWAYS spawn from the right
             Vector2 spawnPos = new Vector2(viewport.Width + 100, GROUND_Y - _knight.Height);
             Vector2 targetPos = new Vector2(viewport.Width - _knight.Width - 100, GROUND_Y - _knight.Height);
-            _knight.WalkIn(spawnPos, targetPos, Direction.Left);
+            Direction walkInDir = Direction.Left;
+
+            _knight.WalkIn(spawnPos, targetPos, walkInDir);
+
+            // Shake the screen!
+            Game1.Instance.ShakeScreen(10f, 0.5f);
 
             _knightHearts.Clear();
             for (int i = 0; i < _knight.Health; i++)
@@ -692,7 +705,8 @@ namespace GameProject0
             }
 
             // Disable boss fight mode when loading a normal game
-            _bossFightMode = false;
+            _bossFightActive = false;
+            _bossHasBeenDefeated = false; // Reset boss state on load
 
             _score = state.Score;
             _nextSpawn = state.NextSpawn;

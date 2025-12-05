@@ -149,7 +149,6 @@ namespace GameProject0.Enemies
             SetState(KnightState.WalkingIn);
         }
 
-        // Tweak 3: Added Viewport parameter
         public void Update(GameTime gameTime, PlayerSprite player, Viewport viewport)
         {
             if (IsRemoved) return;
@@ -217,7 +216,7 @@ namespace GameProject0.Enemies
                         if (_position.X <= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Run);
+                            SetState(KnightState.Walk); // <-- Use Walk animation
                         }
                     }
                     else
@@ -226,7 +225,7 @@ namespace GameProject0.Enemies
                         if (_position.X >= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Run);
+                            SetState(KnightState.Walk); // <-- Use Walk animation
                         }
                     }
                     break;
