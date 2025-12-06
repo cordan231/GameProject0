@@ -65,11 +65,7 @@ namespace GameProject0.Enemies
         private bool _isInvulnerable = false;
         private double _stateTimer;
 
-        // ####################################################################
-        // AI LOGIC & TWEAKABLE CONSTANTS
-        // ####################################################################
-
-        // --- General AI ---
+        // General AI
         private const float CHASE_SPEED = 120f;
         private const float RUN_SPEED = 300f;
         private const float JUMP_SPEED = 600f;
@@ -79,20 +75,19 @@ namespace GameProject0.Enemies
         private Vector2 _walkInTargetPosition;
         private const float WALK_IN_SPEED = 200f;
 
-        // --- Combo Attack 1: Timings & Speeds ---
+        // Combo Attack 1: Timings & Speeds
         private static readonly double[] COMBO1_FRAME_TIMINGS = new double[] { 0.1, 0.1, 0.1, 0.15, 0.25 };
         private const float COMBO1_LUNGE_DISTANCE = 150f;
 
-        // --- Combo Attack 2: Timings & Speeds ---
+        // Combo Attack 2: Timings & Speeds
         private static readonly double[] COMBO2_FRAME_TIMINGS = new double[] { 0.25, 0.25, 0.25, 0.4 };
         private const float COMBO2_LUNGE_DISTANCE = 400f;
 
-        // --- Combo Attack 3: Timings & Speeds ---
+        // Combo Attack 3: Timings & Speeds
         private static readonly double[] COMBO3_FRAME_TIMINGS = new double[] { 0.25, 0.25, 0.3, 0.1 };
         private const float COMBO3_RETREAT_DISTANCE = -500f;
         private const float COMBO3_LUNGE_DISTANCE = 2000f;
 
-        // ####################################################################
 
         // Vulnerability Windows
         private bool _isVulnerableWindow = false;
@@ -162,7 +157,6 @@ namespace GameProject0.Enemies
                 if (_hurtFlashTimer <= 0) _color = Color.White;
             }
 
-            // Animate first, then do logic
             Animate(dt);
 
             if (_currentState == KnightState.Dead)
@@ -216,7 +210,7 @@ namespace GameProject0.Enemies
                         if (_position.X <= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Walk); // <-- Use Walk animation
+                            SetState(KnightState.Walk);
                         }
                     }
                     else
@@ -225,7 +219,7 @@ namespace GameProject0.Enemies
                         if (_position.X >= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Walk); // <-- Use Walk animation
+                            SetState(KnightState.Walk);
                         }
                     }
                     break;
@@ -280,12 +274,12 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.ComboAttack1:
-                    // Spec: Still frame 0
-                    if (_currentFrame >= 1 && _currentFrame <= 3) // Spec: Move frames 1, 2, 3
+                    // Still frame 0
+                    if (_currentFrame >= 1 && _currentFrame <= 3) // Move frames 1, 2, 3
                     {
                         _position.X += (Direction == Direction.Right ? COMBO1_LUNGE_DISTANCE : -COMBO1_LUNGE_DISTANCE) * dt;
                     }
-                    // Spec: Still frame 4
+                    // Still frame 4
                     if (AnimationFinished())
                     {
                         if (player != null && !player.IsDead) { Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right; }
@@ -294,11 +288,11 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.ComboAttack2:
-                    if (_currentFrame == 0 || _currentFrame == 1) // Spec: Move frames 0, 1
+                    if (_currentFrame == 0 || _currentFrame == 1) // Move frames 0, 1
                     {
                         _position.X += (Direction == Direction.Right ? COMBO2_LUNGE_DISTANCE : -COMBO2_LUNGE_DISTANCE) * dt;
                     }
-                    // Spec: Still frames 2, 3
+                    // Still frames 2, 3
                     if (AnimationFinished())
                     {
                         if (player != null && !player.IsDead) { Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right; }
@@ -307,15 +301,15 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.ComboAttack3:
-                    if (_currentFrame == 0 || _currentFrame == 1) // Spec: Move back frames 0, 1
+                    if (_currentFrame == 0 || _currentFrame == 1) // Move back frames 0, 1
                     {
                         _position.X += (Direction == Direction.Right ? COMBO3_RETREAT_DISTANCE : -COMBO3_RETREAT_DISTANCE) * dt;
                     }
-                    else if (_currentFrame == 2) // Spec: Lunge hard frame 2
+                    else if (_currentFrame == 2) // Lunge hard frame 2
                     {
                         _position.X += (Direction == Direction.Right ? COMBO3_LUNGE_DISTANCE : -COMBO3_LUNGE_DISTANCE) * dt;
                     }
-                    // Spec: Still frame 3
+                    // Still frame 3
                     if (AnimationFinished())
                     {
                         StartVulnerabilityWindow(5.0, 2);
@@ -355,7 +349,7 @@ namespace GameProject0.Enemies
                     break;
             }
 
-            // Tweak 3: Clamp position to screen boundaries
+            // Clamp position to screen boundaries
             _position.X = Math.Clamp(_position.X, 0, viewport.Width - Width);
 
             Position = _position;
