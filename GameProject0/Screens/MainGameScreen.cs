@@ -14,11 +14,11 @@ namespace GameProject0
 {
     public class MainGameScreen : IGameScreen
     {
-        // ##### BOSS FIGHT STATUS #####
+        // Boss fight status
         private bool _bossFightActive = false;
-        private bool _bossHasBeenDefeated = false;
-        // ###########################
-
+        //private bool _bossHasBeenDefeated = false;
+        private int _minotaursKilledSinceBoss = 0;
+        private int _skeletonsKilledSinceBoss = 0;
 
         // Reference to the screen manager
         private ScreenManager _screenManager;
@@ -63,6 +63,22 @@ namespace GameProject0
         private int _pauseSelection = 0;
         private List<string> _pauseOptions = new List<string> { "RESUME", "EXIT TO MENU" };
 
+        // Save status
+        private string _statusMessage;
+        private double _statusMessageTimer;
+
+        // Potion Logic
+        private Texture2D _potionTexture;
+        private int _potionCount = 0;
+        private int _nextPotionScoreThreshold = 100;
+
+        // Potion Animation
+        private int _potionCurrentFrame = 0;
+        private double _potionFrameTimer;
+        private const int POTION_FRAME_WIDTH = 18;
+        private const int POTION_FRAME_HEIGHT = 34;
+        private const int POTION_TOTAL_FRAMES = 24;
+
         // Initialize variables and lists
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
@@ -89,6 +105,7 @@ namespace GameProject0
             _playerSprite.LoadContent(_content);
             _spriteFont = _content.Load<SpriteFont>("vcr");
             _coinPickup = _content.Load<SoundEffect>("pickup-coin");
+            _potionTexture = _content.Load<Texture2D>("health-potion");
 
             // Texture for UI boxes
             _whitePixelTexture = new Texture2D(_graphicsDeviceManager.GraphicsDevice, 1, 1);
@@ -152,6 +169,16 @@ namespace GameProject0
 
             var viewport = _graphicsDeviceManager.GraphicsDevice.Viewport;
 
+            // Update status message timer
+            if (_statusMessageTimer > 0)
+            {
+                _statusMessageTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (_statusMessageTimer <= 0)
+                {
+                    _statusMessage = null;
+                }
+            }
+
             // Update attack cooldown
             if (_attackCooldown)
             {
@@ -165,16 +192,39 @@ namespace GameProject0
             // Save/Load handling
             if (inputManager.Save)
             {
-                SaveGame();
+                // Check if the Knight is on screen
+                if (_knight != null && !_knight.IsRemoved)
+                {
+                    _statusMessage = "Game unable to be saved.";
+                    _statusMessageTimer = 2.0; // Show for 2 seconds
+                }
+                else
+                {
+                    SaveGame();
+                    _statusMessage = "Game saved!";
+                    _statusMessageTimer = 2.0;
+                }
             }
             if (inputManager.Load)
             {
                 LoadGame();
+                _statusMessage = "Save loaded!";
+                _statusMessageTimer = 2.0;
                 return;
             }
 
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _playerSprite.Update(gameTime);
+
+            // Animate Potion UI
+            _potionFrameTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            if (_potionFrameTimer > 0.1)
+            {
+                _potionCurrentFrame++;
+                if (_potionCurrentFrame >= POTION_TOTAL_FRAMES)
+                    _potionCurrentFrame = 0;
+                _potionFrameTimer = 0;
+            }
 
             // Check if enemies died and spawn new ones
             if (!_bossFightActive) // Normal enemy loop
@@ -183,8 +233,10 @@ namespace GameProject0
                 {
                     _minotaur = null;
                     _score += 25;
+                    _minotaursKilledSinceBoss++;
 
-                    if (_score >= 100 && !_bossHasBeenDefeated)
+                    // Trigger Boss if we have killed enough fodder enemies
+                    if (_minotaursKilledSinceBoss >= 2 && _skeletonsKilledSinceBoss >= 2)
                     {
                         _bossFightActive = true;
                         SpawnKnight();
@@ -198,8 +250,10 @@ namespace GameProject0
                 {
                     _skeleton = null;
                     _score += 25;
+                    _skeletonsKilledSinceBoss++;
 
-                    if (_score >= 100 && !_bossHasBeenDefeated)
+                    // Trigger Boss if we have killed enough fodder enemies
+                    if (_minotaursKilledSinceBoss >= 2 && _skeletonsKilledSinceBoss >= 2)
                     {
                         _bossFightActive = true;
                         SpawnKnight();
@@ -216,11 +270,14 @@ namespace GameProject0
                 if (_knight != null && _knight.IsRemoved)
                 {
                     _knight = null;
-                    _score += 1000; // Big score for boss
-                    _bossFightActive = false; // Resume normal loop
-                    _bossHasBeenDefeated = true; // Don't spawn boss again
+                    _score += 100; // Big score for boss
+                    _bossFightActive = false;
 
-                    // Spawn the next enemy to restart the loop
+                    // Reset counters to restart the cycle
+                    _minotaursKilledSinceBoss = 0;
+                    _skeletonsKilledSinceBoss = 0;
+
+                    // Spawn the next enemy to restart the normal loop
                     if (_nextSpawn == SpawnState.Minotaur) SpawnMinotaur();
                     else SpawnSkeleton();
                 }
@@ -242,8 +299,21 @@ namespace GameProject0
                     _playerSprite.SetState(CurrentState.Running);
                     _playerSprite.SetDirection(inputManager.Direction.X > 0 ? Direction.Right : Direction.Left);
                 }
+                // Use Potion
+                else if (inputManager.UsePotion && _potionCount > 0)
+                {
+                    if (!_playerSprite.IsDead) // Can't heal if dead
+                    {
+                        _playerSprite.Heal(1);
+                        _potionCount--;
+
+                        // Add a heart to the visual list
+                        _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
+                    }
+                }
                 else _playerSprite.SetState(CurrentState.Idle);
             }
+
 
             // Collision Detection
             // Minotaur Collisions
@@ -456,6 +526,13 @@ namespace GameProject0
                 _playerHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
             }
 
+            // Check if score threshold passed for new potion
+            if (_score >= _nextPotionScoreThreshold)
+            {
+                _potionCount++;
+                _nextPotionScoreThreshold += 100;
+            }
+
         }
 
         // Helper to spawn a new Minotaur on left or right
@@ -592,6 +669,50 @@ namespace GameProject0
             spriteBatch.Draw(_whitePixelTexture, backgroundRect, new Color(0, 0, 139));
             spriteBatch.DrawString(_spriteFont, scoreText, textPosition, Color.White);
 
+            // Draw Potion UI (Under Score)
+            Vector2 potionPos = new Vector2(10, 60); // Positioned below score
+            Rectangle potionSource = new Rectangle(
+                _potionCurrentFrame * POTION_FRAME_WIDTH,
+                0,
+                POTION_FRAME_WIDTH,
+                POTION_FRAME_HEIGHT
+            );
+
+            // Draw the animated sprite
+            spriteBatch.Draw(_potionTexture, potionPos, potionSource, Color.White, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
+
+            // Draw the "x Count" text
+            spriteBatch.DrawString(
+                _spriteFont,
+                $"x {_potionCount}",
+                potionPos + new Vector2(POTION_FRAME_WIDTH * 2.0f + 5, 10),
+                Color.White
+            );
+
+            // Draw Status Message
+            if (!string.IsNullOrEmpty(_statusMessage))
+            {
+                Vector2 textSize = _spriteFont.MeasureString(_statusMessage);
+                Vector2 msgPosition = new Vector2(viewport.Width / 2 - textSize.X / 2, viewport.Height - 100);
+
+                Rectangle msgBackgroundRect = new Rectangle(
+                    (int)(msgPosition.X - padding),
+                    (int)(msgPosition.Y - padding),
+                    (int)(textSize.X + padding * 2),
+                    (int)(textSize.Y + padding * 2)
+                );
+                Rectangle msgOutlineRect = new Rectangle(
+                    msgBackgroundRect.X - (int)outlineThickness,
+                    msgBackgroundRect.Y - (int)outlineThickness,
+                    msgBackgroundRect.Width + (int)(outlineThickness * 2),
+                    msgBackgroundRect.Height + (int)(outlineThickness * 2)
+                );
+
+                spriteBatch.Draw(_whitePixelTexture, msgOutlineRect, Color.White);
+                spriteBatch.Draw(_whitePixelTexture, msgBackgroundRect, new Color(0, 0, 139));
+                spriteBatch.DrawString(_spriteFont, _statusMessage, msgPosition, Color.White);
+            }
+
             // Draw Pause Overlay
             if (_isPaused)
             {
@@ -660,6 +781,10 @@ namespace GameProject0
             var state = new GameState
             {
                 Score = _score,
+                PotionCount = _potionCount,
+                NextPotionThreshold = _nextPotionScoreThreshold,
+                MinotaursKilledSinceBoss = _minotaursKilledSinceBoss,
+                SkeletonsKilledSinceBoss = _skeletonsKilledSinceBoss,
                 Player = new PlayerData
                 {
                     Position = new VectorData(_playerSprite.Position),
@@ -706,10 +831,14 @@ namespace GameProject0
 
             // Disable boss fight mode when loading a normal game
             _bossFightActive = false;
-            _bossHasBeenDefeated = false; // Reset boss state on load
 
             _score = state.Score;
+            _potionCount = state.PotionCount;
+            _nextPotionScoreThreshold = state.NextPotionThreshold;
             _nextSpawn = state.NextSpawn;
+
+            _minotaursKilledSinceBoss = state.MinotaursKilledSinceBoss;
+            _skeletonsKilledSinceBoss = state.SkeletonsKilledSinceBoss;
 
             // Restore Player
             _playerSprite.SetHealth(state.Player.Health);

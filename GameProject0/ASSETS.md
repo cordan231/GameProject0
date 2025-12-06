@@ -47,3 +47,7 @@ Asset Files: player-hurt.mp3, enemy-hurt.mp3
 Creator: Pixabay
 Terms of Use: Free for personal and commercial use under the Pixabay License.
 Source: [https://pixabay.com/sound-effects/search/8-bit%20hurt](https://pixabay.com/sound-effects/search/8-bit%20hurt)
+
+Asset File: health-potion.png
+Creator: Karsiori
+Terms of Use: Free for personal and commercial use. The asset can be found at (https://karsiori.itch.io/pixel-art-potion-pack-animated)

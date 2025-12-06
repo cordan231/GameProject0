@@ -64,6 +64,10 @@ namespace GameProject0
     public class GameState
     {
         public int Score { get; set; }
+        public int PotionCount { get; set; }
+        public int NextPotionThreshold { get; set; }
+        public int MinotaursKilledSinceBoss { get; set; }
+        public int SkeletonsKilledSinceBoss { get; set; }
         public PlayerData Player { get; set; }
         public MinotaurData Minotaur { get; set; }
         public SkeletonData Skeleton { get; set; }
