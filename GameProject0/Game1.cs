@@ -69,6 +69,10 @@ namespace GameProject0
             _screenManager.LoadScreen(new TitleScreen());
             _backgroundMusic = Content.Load<Song>("background-music");
             MediaPlayer.IsRepeating = true;
+
+            // Tweak 2: Set music volume to 50%
+            MediaPlayer.Volume = 0.25f;
+
             MediaPlayer.Play(_backgroundMusic);
 
         }

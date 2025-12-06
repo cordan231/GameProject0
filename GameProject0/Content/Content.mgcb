@@ -193,6 +193,18 @@
 /processorParam:TextureFormat=Color
 /build:gun_standing_shooting.png
 
+#begin health-potion.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:health-potion.png
+
 #begin knight_attack1.png
 /importer:TextureImporter
 /processor:TextureProcessor

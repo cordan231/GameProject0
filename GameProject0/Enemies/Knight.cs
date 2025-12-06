@@ -49,7 +49,7 @@ namespace GameProject0.Enemies
         private int _currentFrame;
         private int _totalFrames;
         private double _animationTimer;
-        private double _animationFrameTime = 0.1;
+        private double[] _animationFrameTimes;
 
         // Stats
         public int Health { get; private set; } = 10;
@@ -65,21 +65,44 @@ namespace GameProject0.Enemies
         private bool _isInvulnerable = false;
         private double _stateTimer;
 
-        // AI Logic
+        // ####################################################################
+        // AI LOGIC & TWEAKABLE CONSTANTS
+        // ####################################################################
+
+        // --- General AI ---
         private const float CHASE_SPEED = 120f;
         private const float RUN_SPEED = 300f;
-        private const float JUMP_SPEED = 250f;
-        private const float ATTACK_RANGE = 120f;
-        private const float RUN_ATTACK_RANGE = 300f;
+        private const float JUMP_SPEED = 600f;
+        private const float ATTACK_RANGE = 150f;
+        private const float RUN_ATTACK_RANGE = 200f;
         private const float PLAYER_CLOSE_RANGE = 200f;
         private Vector2 _walkInTargetPosition;
         private const float WALK_IN_SPEED = 200f;
+
+        // --- Combo Attack 1: Timings & Speeds ---
+        private static readonly double[] COMBO1_FRAME_TIMINGS = new double[] { 0.1, 0.1, 0.1, 0.15, 0.25 };
+        private const float COMBO1_LUNGE_DISTANCE = 150f;
+
+        // --- Combo Attack 2: Timings & Speeds ---
+        private static readonly double[] COMBO2_FRAME_TIMINGS = new double[] { 0.25, 0.25, 0.25, 0.4 };
+        private const float COMBO2_LUNGE_DISTANCE = 400f;
+
+        // --- Combo Attack 3: Timings & Speeds ---
+        private static readonly double[] COMBO3_FRAME_TIMINGS = new double[] { 0.25, 0.25, 0.3, 0.1 };
+        private const float COMBO3_RETREAT_DISTANCE = -500f;
+        private const float COMBO3_LUNGE_DISTANCE = 2000f;
+
+        // ####################################################################
 
         // Vulnerability Windows
         private bool _isVulnerableWindow = false;
         private int _hitsTakenInWindow = 0;
         private double _vulnerabilityTimer = 0;
         private int _hitsToTriggerDefend = 0;
+
+        // Attack Cooldowns
+        private double _runAttackCooldown = 0;
+        private bool _lastAttackWasRunAttack = false;
 
         public BoundingRectangle Bounds { get; private set; }
         public BoundingRectangle AttackBox { get; private set; }
@@ -94,7 +117,7 @@ namespace GameProject0.Enemies
         public Direction Direction
         {
             get => _direction;
-            set { _direction = value; }
+            set { _direction = value; UpdateBounds(); }
         }
         public float Width => FRAME_WIDTH * Scale;
         public float Height => FRAME_HEIGHT * Scale;
@@ -126,7 +149,7 @@ namespace GameProject0.Enemies
             SetState(KnightState.WalkingIn);
         }
 
-        public void Update(GameTime gameTime, PlayerSprite player)
+        public void Update(GameTime gameTime, PlayerSprite player, Viewport viewport)
         {
             if (IsRemoved) return;
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -139,11 +162,19 @@ namespace GameProject0.Enemies
                 if (_hurtFlashTimer <= 0) _color = Color.White;
             }
 
+            // Animate first, then do logic
+            Animate(dt);
+
             if (_currentState == KnightState.Dead)
             {
-                Animate(dt);
-                if (_currentFrame == _totalFrames - 1) IsRemoved = true;
+                if (AnimationFinished()) IsRemoved = true;
                 return;
+            }
+
+            // Update cooldowns
+            if (_runAttackCooldown > 0)
+            {
+                _runAttackCooldown -= dt;
             }
 
             // Handle Vulnerability Window Logic
@@ -154,7 +185,10 @@ namespace GameProject0.Enemies
                 {
                     _isVulnerableWindow = false;
                     _hitsTakenInWindow = 0;
-                    SetState(KnightState.Walk); // Back to chase
+                    SetState(KnightState.Run);
+                    Position = _position;
+                    UpdateAttackBox();
+                    return;
                 }
             }
 
@@ -166,7 +200,8 @@ namespace GameProject0.Enemies
                 if (_currentState != KnightState.RunAttack &&
                     _currentState != KnightState.ComboAttack1 && _currentState != KnightState.ComboAttack2 &&
                     _currentState != KnightState.ComboAttack3 && _currentState != KnightState.Defend &&
-                    _currentState != KnightState.Jump && _currentState != KnightState.Hurt)
+                    _currentState != KnightState.Jump && _currentState != KnightState.Hurt &&
+                    _currentState != KnightState.Idle)
                 {
                     Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right;
                 }
@@ -181,7 +216,7 @@ namespace GameProject0.Enemies
                         if (_position.X <= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Walk);
+                            SetState(KnightState.Walk); // <-- Use Walk animation
                         }
                     }
                     else
@@ -190,28 +225,30 @@ namespace GameProject0.Enemies
                         if (_position.X >= _walkInTargetPosition.X)
                         {
                             _position.X = _walkInTargetPosition.X;
-                            SetState(KnightState.Walk);
+                            SetState(KnightState.Walk); // <-- Use Walk animation
                         }
                     }
-                    Position = _position;
                     break;
 
                 case KnightState.Idle:
                     if (!_isVulnerableWindow)
                     {
                         _stateTimer -= dt;
-                        if (_stateTimer <= 0) SetState(KnightState.Walk);
+                        if (_stateTimer <= 0)
+                        {
+                            SetState(KnightState.Run);
+                        }
                     }
                     break;
 
                 case KnightState.Walk:
-                    if (distance > RUN_ATTACK_RANGE)
-                    {
-                        SetState(KnightState.Run);
-                    }
-                    else if (distance <= ATTACK_RANGE)
+                    if (distance <= ATTACK_RANGE)
                     {
                         SetState(KnightState.ComboAttack1);
+                    }
+                    else if (distance > ATTACK_RANGE + 20)
+                    {
+                        SetState(KnightState.Run);
                     }
                     else
                     {
@@ -220,9 +257,13 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.Run:
-                    if (distance <= RUN_ATTACK_RANGE - 50)
+                    if (distance <= RUN_ATTACK_RANGE && _runAttackCooldown <= 0 && !_lastAttackWasRunAttack)
                     {
                         SetState(KnightState.RunAttack);
+                    }
+                    else if (distance <= ATTACK_RANGE + 20)
+                    {
+                        SetState(KnightState.Walk);
                     }
                     else
                     {
@@ -231,6 +272,7 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.RunAttack:
+                    _position.X += (Direction == Direction.Right ? RUN_SPEED : -RUN_SPEED) * dt;
                     if (AnimationFinished())
                     {
                         StartVulnerabilityWindow(3.0, 1);
@@ -238,12 +280,42 @@ namespace GameProject0.Enemies
                     break;
 
                 case KnightState.ComboAttack1:
-                    if (AnimationFinished()) SetState(KnightState.ComboAttack2);
+                    // Spec: Still frame 0
+                    if (_currentFrame >= 1 && _currentFrame <= 3) // Spec: Move frames 1, 2, 3
+                    {
+                        _position.X += (Direction == Direction.Right ? COMBO1_LUNGE_DISTANCE : -COMBO1_LUNGE_DISTANCE) * dt;
+                    }
+                    // Spec: Still frame 4
+                    if (AnimationFinished())
+                    {
+                        if (player != null && !player.IsDead) { Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right; }
+                        SetState(KnightState.ComboAttack2);
+                    }
                     break;
+
                 case KnightState.ComboAttack2:
-                    if (AnimationFinished()) SetState(KnightState.ComboAttack3);
+                    if (_currentFrame == 0 || _currentFrame == 1) // Spec: Move frames 0, 1
+                    {
+                        _position.X += (Direction == Direction.Right ? COMBO2_LUNGE_DISTANCE : -COMBO2_LUNGE_DISTANCE) * dt;
+                    }
+                    // Spec: Still frames 2, 3
+                    if (AnimationFinished())
+                    {
+                        if (player != null && !player.IsDead) { Direction = (player.Bounds.Center.X < Bounds.Center.X) ? Direction.Left : Direction.Right; }
+                        SetState(KnightState.ComboAttack3);
+                    }
                     break;
+
                 case KnightState.ComboAttack3:
+                    if (_currentFrame == 0 || _currentFrame == 1) // Spec: Move back frames 0, 1
+                    {
+                        _position.X += (Direction == Direction.Right ? COMBO3_RETREAT_DISTANCE : -COMBO3_RETREAT_DISTANCE) * dt;
+                    }
+                    else if (_currentFrame == 2) // Spec: Lunge hard frame 2
+                    {
+                        _position.X += (Direction == Direction.Right ? COMBO3_LUNGE_DISTANCE : -COMBO3_LUNGE_DISTANCE) * dt;
+                    }
+                    // Spec: Still frame 3
                     if (AnimationFinished())
                     {
                         StartVulnerabilityWindow(5.0, 2);
@@ -260,33 +332,33 @@ namespace GameProject0.Enemies
                         }
                         else
                         {
-                            SetState(KnightState.Walk);
+                            SetState(KnightState.Run);
                         }
                     }
                     break;
 
                 case KnightState.Jump:
-                    // Jump away from player
                     float jumpDir = (Direction == Direction.Right) ? -1 : 1;
                     _position.X += jumpDir * JUMP_SPEED * dt;
                     if (AnimationFinished())
                     {
-                        SetState(KnightState.Walk);
+                        SetState(KnightState.Run);
                     }
                     break;
 
                 case KnightState.Hurt:
                     if (AnimationFinished())
                     {
-                        // Return to vulnerability window
                         _isVulnerableWindow = true;
                         SetState(KnightState.Idle);
                     }
                     break;
             }
 
+            // Tweak 3: Clamp position to screen boundaries
+            _position.X = Math.Clamp(_position.X, 0, viewport.Width - Width);
+
             Position = _position;
-            Animate(dt);
             UpdateAttackBox();
         }
 
@@ -301,38 +373,52 @@ namespace GameProject0.Enemies
 
         private void Animate(float dt)
         {
-            _animationTimer += dt;
-            if (_animationTimer > _animationFrameTime)
+            if (_currentFrame >= _totalFrames)
             {
-                _currentFrame++;
-                if (_currentFrame >= _totalFrames)
-                {
-                    if (_currentState == KnightState.Dead || _currentState == KnightState.Defend)
-                    {
-                        _currentFrame = _totalFrames - 1; // Hold last frame
-                    }
-                    else
-                    {
-                        _currentFrame = 0; // Loop
-                    }
-                }
-                _animationTimer -= _animationFrameTime;
+                IsAttackHitboxActive = false;
+                return;
             }
 
-            // Update hitbox activation
+            _animationTimer += dt;
+            if (_animationTimer > _animationFrameTimes[_currentFrame])
+            {
+                _animationTimer -= _animationFrameTimes[_currentFrame];
+                _currentFrame++;
+
+                if (_currentFrame >= _totalFrames)
+                {
+                    switch (_currentState)
+                    {
+                        case KnightState.WalkingIn:
+                        case KnightState.Idle:
+                        case KnightState.Walk:
+                        case KnightState.Run:
+                            _currentFrame = 0;
+                            break;
+                    }
+                }
+            }
+
+            int frameToCheck = _currentFrame;
+            if (frameToCheck >= _totalFrames)
+            {
+                frameToCheck = _totalFrames - 1;
+            }
+
             IsAttackHitboxActive = _currentState switch
             {
-                KnightState.ComboAttack1 => _currentFrame == 3,
-                KnightState.ComboAttack2 => _currentFrame == 2,
-                KnightState.ComboAttack3 => _currentFrame == 2,
-                KnightState.RunAttack => _currentFrame == 3 || _currentFrame == 4,
+                KnightState.ComboAttack1 => frameToCheck == 4,
+                KnightState.ComboAttack2 => frameToCheck == 2,
+                KnightState.ComboAttack3 => frameToCheck == 2,
+                KnightState.RunAttack => frameToCheck == 3 || frameToCheck == 4,
                 _ => false
             };
         }
 
+
         private bool AnimationFinished()
         {
-            return _currentFrame >= _totalFrames - 1 && _animationTimer >= _animationFrameTime;
+            return _currentFrame >= _totalFrames;
         }
 
         public void TakeDamage(int damage)
@@ -351,7 +437,6 @@ namespace GameProject0.Enemies
                 return;
             }
 
-            // Check vulnerability window logic
             if (_isVulnerableWindow)
             {
                 _hitsTakenInWindow++;
@@ -366,7 +451,6 @@ namespace GameProject0.Enemies
                     SetState(KnightState.Hurt);
                 }
             }
-            // Do not interrupt attacks
             else if (_currentState == KnightState.Idle || _currentState == KnightState.Walk || _currentState == KnightState.Run)
             {
                 SetState(KnightState.Hurt);
@@ -375,9 +459,8 @@ namespace GameProject0.Enemies
 
         public void SetState(KnightState state)
         {
-            //if (_currentState == state) return;
             if (_currentState == KnightState.Dead) return;
-            if (_currentState == KnightState.Hurt && state != KnightState.Idle) return; // Can only exit Hurt back to Idle
+            if (_currentState == KnightState.Hurt && state != KnightState.Idle) return;
 
             _currentState = state;
             _currentFrame = 0;
@@ -385,79 +468,110 @@ namespace GameProject0.Enemies
             _isInvulnerable = false;
             IsAttackHitboxActive = false;
 
+            double defaultFrameTime = 0.1;
+
             switch (state)
             {
                 case KnightState.WalkingIn:
                     _currentTexture = _walkTexture;
                     _totalFrames = 8;
-                    _animationFrameTime = 0.1;
+                    defaultFrameTime = 0.1;
                     break;
                 case KnightState.Idle:
                     _currentTexture = _idleTexture;
                     _totalFrames = 4;
-                    _animationFrameTime = 0.15;
+                    defaultFrameTime = 0.15;
+                    if (!_isVulnerableWindow)
+                    {
+                        _stateTimer = 1.0;
+                    }
                     break;
                 case KnightState.Walk:
                     _currentTexture = _walkTexture;
                     _totalFrames = 8;
-                    _animationFrameTime = 0.1;
+                    defaultFrameTime = 0.1;
                     break;
                 case KnightState.Run:
                     _currentTexture = _runTexture;
                     _totalFrames = 7;
-                    _animationFrameTime = 0.1;
+                    defaultFrameTime = 0.1;
                     break;
                 case KnightState.RunAttack:
                     _currentTexture = _runAttackTexture;
                     _totalFrames = 6;
-                    _animationFrameTime = 0.1;
+                    defaultFrameTime = 0.1;
+                    _runAttackCooldown = 5.0;
+                    _lastAttackWasRunAttack = true;
                     break;
+
                 case KnightState.ComboAttack1:
                     _currentTexture = _attack1Texture;
                     _totalFrames = 5;
-                    _animationFrameTime = 0.1;
+                    _animationFrameTimes = COMBO1_FRAME_TIMINGS;
+                    _lastAttackWasRunAttack = false;
                     break;
                 case KnightState.ComboAttack2:
                     _currentTexture = _attack2Texture;
                     _totalFrames = 4;
-                    _animationFrameTime = 0.1;
+                    _animationFrameTimes = COMBO2_FRAME_TIMINGS;
                     break;
                 case KnightState.ComboAttack3:
                     _currentTexture = _attack3Texture;
                     _totalFrames = 4;
-                    _animationFrameTime = 0.1;
+                    _animationFrameTimes = COMBO3_FRAME_TIMINGS;
                     break;
+
                 case KnightState.Defend:
                     _currentTexture = _defendTexture;
                     _totalFrames = 5;
-                    _animationFrameTime = 0.1;
-                    _stateTimer = 3.0; // Defend for 3 seconds
+                    defaultFrameTime = 0.1;
+                    _stateTimer = 3.0;
                     _isInvulnerable = true;
                     break;
                 case KnightState.Jump:
                     _currentTexture = _jumpTexture;
                     _totalFrames = 6;
-                    _animationFrameTime = 0.1;
+                    defaultFrameTime = 0.1;
                     break;
                 case KnightState.Hurt:
                     _currentTexture = _hurtTexture;
                     _totalFrames = 2;
-                    _animationFrameTime = 0.1;
+                    defaultFrameTime = 0.1;
                     break;
                 case KnightState.Dead:
                     _currentTexture = _deadTexture;
                     _totalFrames = 6;
-                    _animationFrameTime = 0.15;
+                    defaultFrameTime = 0.15;
                     break;
+            }
+
+            if (state != KnightState.ComboAttack1 && state != KnightState.ComboAttack2 && state != KnightState.ComboAttack3)
+            {
+                _animationFrameTimes = new double[_totalFrames];
+                for (int i = 0; i < _totalFrames; i++)
+                {
+                    _animationFrameTimes[i] = defaultFrameTime;
+                }
             }
         }
 
         private void UpdateBounds()
         {
-            float boxWidth = (FRAME_WIDTH * Scale) * 0.3f;
+            float boxWidth = (FRAME_WIDTH * Scale) * 0.4f;
             float boxHeight = (FRAME_HEIGHT * Scale) * 0.7f;
-            float xOffset = (Width - boxWidth) / 2;
             float yOffset = (Height - boxHeight);
+            float xOffsetFromEdge = (FRAME_WIDTH * Scale) * 0.1f;
+            float xOffset;
+
+            if (Direction == Direction.Right)
+            {
+                xOffset = xOffsetFromEdge;
+            }
+            else // Direction.Left
+            {
+                xOffset = (FRAME_WIDTH * Scale) - xOffsetFromEdge - boxWidth;
+            }
+
             Bounds = new BoundingRectangle(
                 new Vector2(_position.X + xOffset, _position.Y + yOffset),
                 boxWidth,
@@ -467,18 +581,18 @@ namespace GameProject0.Enemies
 
         private void UpdateAttackBox()
         {
-            float attackWidth = (FRAME_WIDTH * Scale) * 0.3f;
+            float attackWidth = (FRAME_WIDTH * Scale) * 0.15f;
             float attackHeight = (FRAME_HEIGHT * Scale) * 0.3f;
-            float yOffset = (FRAME_HEIGHT * Scale) * 0.4f;
+            float yOffset = (FRAME_HEIGHT * Scale) * 0.45f;
             float xOffset;
 
             if (Direction == Direction.Right)
             {
-                xOffset = (FRAME_WIDTH * Scale) * 0.65f;
+                xOffset = (FRAME_WIDTH * Scale) * 0.6f;
             }
             else
             {
-                xOffset = (FRAME_WIDTH * Scale) * 0.05f;
+                xOffset = (FRAME_WIDTH * Scale) * 0.15f;
             }
 
             AttackBox = new BoundingRectangle(Position.X + xOffset, Position.Y + yOffset, attackWidth, attackHeight);
@@ -488,8 +602,14 @@ namespace GameProject0.Enemies
         {
             if (IsRemoved) return;
 
+            int frameToDraw = _currentFrame;
+            if (frameToDraw >= _totalFrames)
+            {
+                frameToDraw = _totalFrames - 1;
+            }
+
             var effects = (_direction == Direction.Left) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            var sourceRect = new Rectangle(_currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
+            var sourceRect = new Rectangle(frameToDraw * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
             spriteBatch.Draw(_currentTexture, Position, sourceRect, _color, 0f, Vector2.Zero, Scale, effects, 0f);
         }
     }

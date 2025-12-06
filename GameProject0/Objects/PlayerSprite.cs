@@ -396,5 +396,16 @@ namespace GameProject0
 
             spriteBatch.Draw(_currentTexture, Position, rect, Color.White, 0f, Vector2.Zero, Scale, effects, 0f);
         }
+
+        public void Heal(int amount)
+        {
+            if (IsDead) return;
+            if (Health < 3)
+            {
+                Health += amount;
+                if (Health > 3) Health = 3;
+            }
+        }
+
     }
 }
