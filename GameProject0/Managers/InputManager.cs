@@ -45,6 +45,12 @@ namespace GameProject0
             Buttons.DPadLeft, Buttons.DPadRight,
             Buttons.DPadLeft, Buttons.DPadRight
         };
+        // Boss cheat code (Controller): Y Y X X A A
+        private readonly Buttons[] _bossCheatBtns = {
+            Buttons.Y, Buttons.Y,
+            Buttons.X, Buttons.X,
+            Buttons.A, Buttons.A
+        };
 
 
         // Update input states
@@ -195,6 +201,9 @@ namespace GameProject0
             CheckButton(Buttons.DPadDown);
             CheckButton(Buttons.DPadLeft);
             CheckButton(Buttons.DPadRight);
+            CheckButton(Buttons.Y);
+            CheckButton(Buttons.X);
+            CheckButton(Buttons.A);
         }
 
         private void CheckButton(Buttons btn)
@@ -202,8 +211,24 @@ namespace GameProject0
             if (_currentGamePadState.IsButtonDown(btn) && _priorGamePadState.IsButtonUp(btn))
             {
                 _btnBuffer.Add(btn);
-                if (_btnBuffer.Count > _cheatBtns.Length) _btnBuffer.RemoveAt(0);
-                if (_btnBuffer.SequenceEqual(_cheatBtns)) CheatActivated = true;
+
+                // Keep buffer large enough for both cheats
+                int maxLen = System.Math.Max(_cheatBtns.Length, _bossCheatBtns.Length);
+                if (_btnBuffer.Count > maxLen) _btnBuffer.RemoveAt(0);
+
+                // Check Gun Code
+                if (_btnBuffer.Count >= _cheatBtns.Length)
+                {
+                    var suffix = _btnBuffer.Skip(_btnBuffer.Count - _cheatBtns.Length).Take(_cheatBtns.Length);
+                    if (suffix.SequenceEqual(_cheatBtns)) CheatActivated = true;
+                }
+
+                // Check Boss Code
+                if (_btnBuffer.Count >= _bossCheatBtns.Length)
+                {
+                    var suffix = _btnBuffer.Skip(_btnBuffer.Count - _bossCheatBtns.Length).Take(_bossCheatBtns.Length);
+                    if (suffix.SequenceEqual(_bossCheatBtns)) BossCheatActivated = true;
+                }
             }
         }
 

@@ -16,6 +16,7 @@ namespace GameProject0
         private Samurai _boss;
         private Tilemap _tilemap;
         private SpriteFont _font;
+        private Texture2D _whitePixelTexture;
 
         // Simple hearts list for UI
         private List<Heart> _playerHearts = new List<Heart>();
@@ -23,6 +24,11 @@ namespace GameProject0
         private const float GROUND_Y = 3 * 64 * 2.0f;
         private bool _cooldown = false;
         private double _cooldownTimer = 0;
+
+        // Pause menu state
+        private bool _isPaused = false;
+        private int _pauseSelection = 0;
+        private List<string> _pauseOptions = new List<string> { "RESUME", "EXIT TO MENU" };
 
         public void Initialize(ScreenManager sm, ContentManager cm, GraphicsDeviceManager gdm)
         {
@@ -45,11 +51,42 @@ namespace GameProject0
 
             _font = _content.Load<SpriteFont>("vcr");
 
+            _whitePixelTexture = new Texture2D(_graphics.GraphicsDevice, 1, 1);
+            _whitePixelTexture.SetData(new[] { Color.White });
+
             for (int i = 0; i < _player.Health; i++) _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
         }
 
         public void Update(GameTime gameTime, InputManager input)
         {
+            // Toggle pause if requested
+            if (input.Pause)
+            {
+                _isPaused = !_isPaused;
+                _pauseSelection = 0;
+                return;
+            }
+
+            // Handle Pause Menu Logic
+            if (_isPaused)
+            {
+                if (input.Direction.Y > 0) _pauseSelection = 1;
+                if (input.Direction.Y < 0) _pauseSelection = 0;
+
+                if (input.MenuBack)
+                {
+                    _isPaused = false;
+                    return;
+                }
+
+                if (input.Attack || input.Select)
+                {
+                    if (_pauseSelection == 0) _isPaused = false; // Resume
+                    else _screenManager.LoadScreen(new TitleScreen()); // Exit
+                }
+                return;
+            }
+
             if (_player.IsDead) { _screenManager.LoadScreen(new TitleScreen()); return; }
             if (_boss.IsRemoved) { _screenManager.LoadScreen(new TitleScreen()); return; }
 
@@ -91,6 +128,8 @@ namespace GameProject0
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
+            var viewport = _graphics.GraphicsDevice.Viewport;
+
             _graphics.GraphicsDevice.Clear(new Color(50, 0, 0));
             _tilemap.Draw(gameTime, spriteBatch);
             _player.Draw(spriteBatch);
@@ -98,6 +137,26 @@ namespace GameProject0
 
             // Draw Boss HP text
             spriteBatch.DrawString(_font, $"SAMURAI HP: {_boss.Health}", new Vector2(500, 50), Color.White);
+
+            // Draw Pause Overlay
+            if (_isPaused)
+            {
+                spriteBatch.Draw(_whitePixelTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * 0.7f);
+
+                Vector2 center = new Vector2(viewport.Width / 2, viewport.Height / 2);
+
+                string title = "PAUSED";
+                Vector2 titleSize = _font.MeasureString(title);
+                spriteBatch.DrawString(_font, title, center - titleSize / 2 - new Vector2(0, 60), Color.White);
+
+                for (int i = 0; i < _pauseOptions.Count; i++)
+                {
+                    Color color = (i == _pauseSelection) ? Color.Yellow : Color.Gray;
+                    string text = (i == _pauseSelection) ? $"> {_pauseOptions[i]} <" : _pauseOptions[i];
+                    Vector2 textSize = _font.MeasureString(text);
+                    spriteBatch.DrawString(_font, text, center - textSize / 2 + new Vector2(0, i * 40), color);
+                }
+            }
         }
 
         public void Draw3D(GameTime gameTime, GraphicsDevice gd)
