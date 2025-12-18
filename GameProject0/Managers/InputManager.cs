@@ -29,6 +29,7 @@ namespace GameProject0
         public bool Load { get; private set; } = false;
 
         public bool CheatActivated { get; private set; } = false;
+        public bool BossCheatActivated { get; private set; } = false;
 
         // Cheat Buffers
         private List<Keys> _keyBuffer = new List<Keys>();
@@ -36,6 +37,7 @@ namespace GameProject0
 
         // Keyboard cheat code: F, I, A, N, C, E, E
         private readonly Keys[] _cheatKeys = { Keys.F, Keys.I, Keys.A, Keys.N, Keys.C, Keys.E, Keys.E };
+        private readonly Keys[] _bossCheatKeys = { Keys.B, Keys.O, Keys.S, Keys.S };
         // Controller cheat code: Up, Up, Down, Down, Left, Right, Left, Right
         private readonly Buttons[] _cheatBtns = {
             Buttons.DPadUp, Buttons.DPadUp,
@@ -65,6 +67,7 @@ namespace GameProject0
             Save = false;
             Load = false;
             CheatActivated = false;
+            BossCheatActivated = false;
 
             // Movement
             if (_currentKeyboardState.IsKeyDown(Keys.Left) || _currentKeyboardState.IsKeyDown(Keys.A))
@@ -166,8 +169,24 @@ namespace GameProject0
                 if (_priorKeyboardState.IsKeyUp(key))
                 {
                     _keyBuffer.Add(key);
-                    if (_keyBuffer.Count > _cheatKeys.Length) _keyBuffer.RemoveAt(0);
-                    if (_keyBuffer.SequenceEqual(_cheatKeys)) CheatActivated = true;
+
+                    // Keep buffer long enough for the longest cheat
+                    int maxLen = System.Math.Max(_cheatKeys.Length, _bossCheatKeys.Length);
+                    if (_keyBuffer.Count > maxLen) _keyBuffer.RemoveAt(0);
+
+                    // Check FIANCEE
+                    if (_keyBuffer.Count >= _cheatKeys.Length)
+                    {
+                        var suffix = _keyBuffer.Skip(_keyBuffer.Count - _cheatKeys.Length).Take(_cheatKeys.Length);
+                        if (suffix.SequenceEqual(_cheatKeys)) CheatActivated = true;
+                    }
+
+                    // Check BOSS
+                    if (_keyBuffer.Count >= _bossCheatKeys.Length)
+                    {
+                        var suffix = _keyBuffer.Skip(_keyBuffer.Count - _bossCheatKeys.Length).Take(_bossCheatKeys.Length);
+                        if (suffix.SequenceEqual(_bossCheatKeys)) BossCheatActivated = true;
+                    }
                 }
             }
 

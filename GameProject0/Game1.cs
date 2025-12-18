@@ -33,6 +33,9 @@ namespace GameProject0
         // Indicates whether gun mode is active
         public static bool GunModeActive { get; set; } = false;
 
+        // Indicates whether the secret boss is active
+        public static bool SecretBossActive { get; set; } = false;
+
         // Screen shake variables
         private float _screenShakeTimer = 0;
         private float _screenShakeMagnitude = 0;
@@ -107,7 +110,7 @@ namespace GameProject0
         // Draw game elements
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.PaleTurquoise);
+            GraphicsDevice.Clear(Color.LightCyan);
 
             _screenManager.CurrentScreen?.Draw3D(gameTime, GraphicsDevice);
 

@@ -93,8 +93,11 @@ namespace GameProject0
                 {
                     switch (selectedIndex)
                     {
-                        case 0:
-                            _screenManager.LoadScreen(new MainGameScreen());
+                        case 0: // Start Game
+                            if (Game1.SecretBossActive)
+                                _screenManager.LoadScreen(new SamuraiBossScreen());
+                            else
+                                _screenManager.LoadScreen(new MainGameScreen());
                             break;
                         case 1:
                             _screenManager.LoadScreen(new ControlScreen());

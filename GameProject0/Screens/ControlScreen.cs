@@ -53,6 +53,13 @@ namespace GameProject0
                 _statusMessage = "CHEAT ACTIVATED";
                 _statusMessageTimer = 2.0;
             }
+
+            if (inputManager.BossCheatActivated)
+            {
+                Game1.SecretBossActive = !Game1.SecretBossActive;
+                _statusMessage = Game1.SecretBossActive ? "SECRET BOSS ACTIVATED" : "SECRET BOSS DEACTIVATED";
+                _statusMessageTimer = 2.0;
+            }
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
