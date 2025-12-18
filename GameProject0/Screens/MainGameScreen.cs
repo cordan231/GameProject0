@@ -69,7 +69,7 @@ namespace GameProject0
 
         // Potion Logic
         private Texture2D _potionTexture;
-        private int _potionCount = 0;
+        private int _potionCount;
         private int _nextPotionScoreThreshold = 100;
 
         // Potion Animation
@@ -90,6 +90,7 @@ namespace GameProject0
             _coins = new List<Coin>();
             _random = new Random();
             _score = 0;
+            _potionCount = 1;
             _minotaurHearts = new List<Heart>();
             _playerHearts = new List<Heart>();
             _skeletonHearts = new List<Heart>();
@@ -296,28 +297,35 @@ namespace GameProject0
             _knight?.Update(gameTime, _playerSprite, viewport);
 
             // Player Input Handling
+            // Player Input Handling
             if (_playerSprite.CurrentPlayerState == CurrentState.Idle || _playerSprite.CurrentPlayerState == CurrentState.Running)
             {
                 if (inputManager.Roll) _playerSprite.Roll();
                 else if (inputManager.Attack) _playerSprite.Attack();
-                else if (inputManager.Direction.X != 0)
+                else
                 {
-                    _playerSprite.SetState(CurrentState.Running);
-                    _playerSprite.SetDirection(inputManager.Direction.X > 0 ? Direction.Right : Direction.Left);
-                }
-                // Use Potion
-                else if (inputManager.UsePotion && _potionCount > 0)
-                {
-                    if (!_playerSprite.IsDead) // Can't heal if dead
+                    // Movement Logic
+                    if (inputManager.Direction.X != 0)
                     {
-                        _playerSprite.Heal(1);
-                        _potionCount--;
+                        _playerSprite.SetState(CurrentState.Running);
+                        _playerSprite.SetDirection(inputManager.Direction.X > 0 ? Direction.Right : Direction.Left);
+                    }
+                    else
+                    {
+                        _playerSprite.SetState(CurrentState.Idle);
+                    }
 
-                        // Add a heart to the visual list
-                        _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
+                    // Potion Logic
+                    if (inputManager.UsePotion && _potionCount > 0)
+                    {
+                        if (!_playerSprite.IsDead)
+                        {
+                            _playerSprite.Heal(1);
+                            _potionCount--;
+                            _playerHearts.Add(new Heart(Game1.Instance, Color.Blue));
+                        }
                     }
                 }
-                else _playerSprite.SetState(CurrentState.Idle);
             }
 
 
