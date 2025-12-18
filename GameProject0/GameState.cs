@@ -65,18 +65,20 @@ namespace GameProject0
     {
         public int Score { get; set; }
         public int PotionCount { get; set; }
-        public int NextPotionThreshold { get; set; }
+        public int PotionProgress { get; set; }
+
+        //public int NextPotionThreshold { get; set; }
         public int MinotaursKilledSinceBoss { get; set; }
         public int SkeletonsKilledSinceBoss { get; set; }
         public PlayerData Player { get; set; }
         public MinotaurData Minotaur { get; set; }
         public SkeletonData Skeleton { get; set; }
-        public List<VectorData> CoinPositions { get; set; }
+        //public List<VectorData> CoinPositions { get; set; }
         public SpawnState NextSpawn { get; set; }
 
         public GameState()
         {
-            CoinPositions = new List<VectorData>();
+            //CoinPositions = new List<VectorData>();
             Player = new PlayerData();
             Minotaur = new MinotaurData();
             Skeleton = new SkeletonData();

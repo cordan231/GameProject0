@@ -27,15 +27,24 @@ namespace GameProject0
         // The level tilemap
         private Tilemap _tilemap;
         // List of active coins
-        private List<Coin> _coins;
+        //private List<Coin> _coins;
         private Random _random;
-        private double _coinSpawnTimer;
+        //private double _coinSpawnTimer;
         private int _score;
         private SpriteFont _spriteFont;
         private ContentManager _content;
         private GraphicsDeviceManager _graphicsDeviceManager;
         private SoundEffect _coinPickup;
         private Texture2D _whitePixelTexture;
+
+        // Getting potion popup
+        private class PotionNotification
+        {
+            public Vector2 Position;
+            public float Timer;
+            public const float MaxTime = 1.0f;
+        }
+        private List<PotionNotification> _potionNotifications;
 
         // Enemy references
         private Minotaur _minotaur;
@@ -70,7 +79,8 @@ namespace GameProject0
         // Potion Logic
         private Texture2D _potionTexture;
         private int _potionCount;
-        private int _nextPotionScoreThreshold = 100;
+        private int _potionProgress = 0;
+        //private int _nextPotionScoreThreshold = 100;
 
         // Potion Animation
         private int _potionCurrentFrame = 0;
@@ -87,10 +97,12 @@ namespace GameProject0
             _graphicsDeviceManager = graphicsDeviceManager;
             _playerSprite = new PlayerSprite();
             _tilemap = new Tilemap("map.txt");
-            _coins = new List<Coin>();
+            //_coins = new List<Coin>();
             _random = new Random();
             _score = 0;
             _potionCount = 1;
+            _potionProgress = 0;
+            _potionNotifications = new List<PotionNotification>();
             _minotaurHearts = new List<Heart>();
             _playerHearts = new List<Heart>();
             _skeletonHearts = new List<Heart>();
@@ -240,6 +252,7 @@ namespace GameProject0
                 {
                     _minotaur = null;
                     _score += 25;
+                    _potionProgress += 1;
                     _minotaursKilledSinceBoss++;
 
                     // Trigger Boss if we have killed enough fodder enemies
@@ -257,6 +270,7 @@ namespace GameProject0
                 {
                     _skeleton = null;
                     _score += 25;
+                    _potionProgress += 1;
                     _skeletonsKilledSinceBoss++;
 
                     // Trigger Boss if we have killed enough fodder enemies
@@ -277,7 +291,8 @@ namespace GameProject0
                 if (_knight != null && _knight.IsRemoved)
                 {
                     _knight = null;
-                    _score += 100; // Big score for boss
+                    _score += 100;
+                    _potionProgress += 4;
                     _bossFightActive = false;
 
                     // Reset counters to restart the cycle
@@ -290,6 +305,18 @@ namespace GameProject0
                 }
             }
 
+            // Get potion
+            while (_potionProgress >= 4)
+            {
+                _potionCount++;
+                _potionProgress -= 4;
+                _coinPickup.Play();
+                _potionNotifications.Add(new PotionNotification
+                {
+                    Position = new Vector2(_playerSprite.Position.X + _playerSprite.Width / 2f, _playerSprite.Position.Y + 50),
+                    Timer = PotionNotification.MaxTime
+                });
+            }
 
             _minotaur?.Update(gameTime, _playerSprite);
             _skeleton?.Update(gameTime, viewport);
@@ -417,33 +444,33 @@ namespace GameProject0
             playerNewPos.X = Math.Clamp(playerNewPos.X, minX, maxX);
             _playerSprite.Position = playerNewPos;
 
-            // Coin Spawning and Collection (Disabled in Boss Mode)
-            if (!_bossFightActive)
-            {
-                _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
-                if (_coinSpawnTimer > 1.0)
-                {
-                    _coinSpawnTimer = 0;
-                    var coin = new Coin();
-                    coin.LoadContent(_content);
-                    coin.Position = new Vector2(_random.Next(0, _graphicsDeviceManager.GraphicsDevice.Viewport.Width - 64), -64);
-                    _coins.Add(coin);
-                }
-            }
-            for (int i = _coins.Count - 1; i >= 0; i--)
-            {
-                _coins[i].Update(gameTime);
-                if (_coins[i].CollidesWith(_playerSprite))
-                {
-                    _score++;
-                    _coins.RemoveAt(i);
-                    _coinPickup.Play();
-                }
-                else if (_coins[i].Position.Y > _graphicsDeviceManager.GraphicsDevice.Viewport.Height)
-                {
-                    _coins.RemoveAt(i);
-                }
-            }
+            //// Coin Spawning and Collection (Disabled in Boss Mode)
+            //if (!_bossFightActive)
+            //{
+            //    _coinSpawnTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            //    if (_coinSpawnTimer > 1.0)
+            //    {
+            //        _coinSpawnTimer = 0;
+            //        var coin = new Coin();
+            //        coin.LoadContent(_content);
+            //        coin.Position = new Vector2(_random.Next(0, _graphicsDeviceManager.GraphicsDevice.Viewport.Width - 64), -64);
+            //        _coins.Add(coin);
+            //    }
+            //}
+            //for (int i = _coins.Count - 1; i >= 0; i--)
+            //{
+            //    _coins[i].Update(gameTime);
+            //    if (_coins[i].CollidesWith(_playerSprite))
+            //    {
+            //        _score++;
+            //        _coins.RemoveAt(i);
+            //        _coinPickup.Play();
+            //    }
+            //    else if (_coins[i].Position.Y > _graphicsDeviceManager.GraphicsDevice.Viewport.Height)
+            //    {
+            //        _coins.RemoveAt(i);
+            //    }
+            //}
 
             // Update 3D Heart Positions
             float angle = (float)gameTime.TotalGameTime.TotalSeconds * 1.5f;
@@ -540,11 +567,23 @@ namespace GameProject0
                 _playerHearts[i].World = Matrix.CreateScale(heartScale) * Matrix.CreateRotationY(angle) * Matrix.CreateTranslation(new Vector3(xOffset, topEdgeOfView, 0));
             }
 
-            // Check if score threshold passed for new potion
-            if (_score >= _nextPotionScoreThreshold)
+            //// Check if score threshold passed for new potion
+            //if (_score >= _nextPotionScoreThreshold)
+            //{
+            //    _potionCount++;
+            //    _nextPotionScoreThreshold += 100;
+            //}
+
+            for (int i = _potionNotifications.Count - 1; i >= 0; i--)
             {
-                _potionCount++;
-                _nextPotionScoreThreshold += 100;
+                float dtNotification = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                _potionNotifications[i].Timer -= dtNotification;
+                _potionNotifications[i].Position.Y -= 50f * dtNotification;
+
+                if (_potionNotifications[i].Timer <= 0)
+                {
+                    _potionNotifications.RemoveAt(i);
+                }
             }
 
         }
@@ -654,10 +693,10 @@ namespace GameProject0
             _skeleton?.Draw(spriteBatch);
             _knight?.Draw(spriteBatch);
 
-            foreach (var coin in _coins)
-            {
-                coin.Draw(spriteBatch);
-            }
+            //foreach (var coin in _coins)
+            //{
+            //    coin.Draw(spriteBatch);
+            //}
 
             // Draw Score Box
             string scoreText = $"Score: {_score}";
@@ -699,9 +738,50 @@ namespace GameProject0
             spriteBatch.DrawString(
                 _spriteFont,
                 $"x {_potionCount}",
-                potionPos + new Vector2(POTION_FRAME_WIDTH * 2.0f + 5, 10),
-                Color.White
+                potionPos + new Vector2(POTION_FRAME_WIDTH * 2.0f + 10, 40),
+                Color.DarkBlue
             );
+
+            // Potion Progress Bar
+            int barSegments = 4;
+            float segmentWidth = 20f;
+            float segmentHeight = 8f;
+            float segmentSpacing = 4f;
+            Vector2 barStartPos = new Vector2(potionPos.X, potionPos.Y + POTION_FRAME_HEIGHT * 2.0f + 5f);
+
+            for (int i = 0; i < barSegments; i++)
+            {
+                Color color = (i < _potionProgress) ? Color.Yellow : Color.Gray;
+                Rectangle segmentRect = new Rectangle(
+                    (int)(barStartPos.X + i * (segmentWidth + segmentSpacing)),
+                    (int)barStartPos.Y,
+                    (int)segmentWidth,
+                    (int)segmentHeight
+                );
+                spriteBatch.Draw(_whitePixelTexture, segmentRect, color);
+            }
+
+            // Potion Popup Notification
+            foreach (var note in _potionNotifications)
+            {
+                float alpha = note.Timer / PotionNotification.MaxTime;
+                Color color = Color.DarkBlue * alpha;
+
+                // Draw "+"
+                spriteBatch.DrawString(_spriteFont, "+", note.Position, color);
+
+                // Draw Potion Texture
+                Vector2 plusSize = _spriteFont.MeasureString("+");
+                Rectangle destRect = new Rectangle(
+                    (int)(note.Position.X + plusSize.X + 5),
+                    (int)note.Position.Y,
+                    POTION_FRAME_WIDTH,
+                    POTION_FRAME_HEIGHT
+                );
+                Rectangle sourceRect = new Rectangle(0, 0, POTION_FRAME_WIDTH, POTION_FRAME_HEIGHT);
+
+                spriteBatch.Draw(_potionTexture, destRect, sourceRect, Color.White * alpha);
+            }
 
             // Draw Status Message
             if (!string.IsNullOrEmpty(_statusMessage))
@@ -796,7 +876,8 @@ namespace GameProject0
             {
                 Score = _score,
                 PotionCount = _potionCount,
-                NextPotionThreshold = _nextPotionScoreThreshold,
+                PotionProgress = _potionProgress,
+                //NextPotionThreshold = _nextPotionScoreThreshold,
                 MinotaursKilledSinceBoss = _minotaursKilledSinceBoss,
                 SkeletonsKilledSinceBoss = _skeletonsKilledSinceBoss,
                 Player = new PlayerData
@@ -807,7 +888,7 @@ namespace GameProject0
                     KnockbackVelocity = new VectorData(_playerSprite.KnockbackVelocity),
                     Direction = _playerSprite._currentDirection
                 },
-                CoinPositions = _coins.Select(c => new VectorData(c.Position)).ToList(),
+                //CoinPositions = _coins.Select(c => new VectorData(c.Position)).ToList(),
                 Minotaur = _minotaur == null ? new MinotaurData { IsRemoved = true } : new MinotaurData
                 {
                     IsRemoved = _minotaur.IsRemoved,
@@ -848,7 +929,7 @@ namespace GameProject0
 
             _score = state.Score;
             _potionCount = state.PotionCount;
-            _nextPotionScoreThreshold = state.NextPotionThreshold;
+            _potionProgress = state.PotionProgress;
             _nextSpawn = state.NextSpawn;
 
             _minotaursKilledSinceBoss = state.MinotaursKilledSinceBoss;
@@ -861,15 +942,15 @@ namespace GameProject0
             _playerSprite._currentDirection = state.Player.Direction;
             _playerSprite.Position = state.Player.Position.ToVector2();
 
-            // Restore Coins
-            _coins.Clear();
-            foreach (var pos in state.CoinPositions)
-            {
-                var coin = new Coin();
-                coin.LoadContent(_content);
-                coin.Position = pos.ToVector2();
-                _coins.Add(coin);
-            }
+            //// Restore Coins
+            //_coins.Clear();
+            //foreach (var pos in state.CoinPositions)
+            //{
+            //    var coin = new Coin();
+            //    coin.LoadContent(_content);
+            //    coin.Position = pos.ToVector2();
+            //    _coins.Add(coin);
+            //}
 
             // Restore Minotaur
             if (state.Minotaur != null && !state.Minotaur.IsRemoved)
