@@ -308,7 +308,10 @@ namespace GameProject0
             // Get potion
             while (_potionProgress >= 4)
             {
-                _potionCount++;
+                if (_potionCount <= 2)
+                {
+                    _potionCount++;
+                }
                 _potionProgress -= 4;
                 _coinPickup.Play();
                 _potionNotifications.Add(new PotionNotification
