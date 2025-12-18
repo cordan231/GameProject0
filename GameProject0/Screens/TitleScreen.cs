@@ -86,7 +86,7 @@ namespace GameProject0
                 GROUND_Y - _playerSprite.Height
             );
 
-            if (inputManager.Attack)
+            if (inputManager.Select)
             {
                 int selectedIndex = GetSelectedMenuIndex();
                 if (selectedIndex != -1)

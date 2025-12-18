@@ -139,7 +139,7 @@ namespace GameProject0
         public void Update(GameTime gameTime, InputManager inputManager)
         {
             // Toggle pause if requested
-            if (inputManager.Exit)
+            if (inputManager.Pause)
             {
                 _isPaused = !_isPaused;
                 _pauseSelection = 0;
@@ -151,6 +151,12 @@ namespace GameProject0
             {
                 if (inputManager.Direction.Y > 0) _pauseSelection = 1;
                 if (inputManager.Direction.Y < 0) _pauseSelection = 0;
+
+                if (inputManager.MenuBack)
+                {
+                    _isPaused = false;
+                    return;
+                }
 
                 if (inputManager.Attack || inputManager.Select)
                 {

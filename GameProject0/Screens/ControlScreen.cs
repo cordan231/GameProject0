@@ -13,6 +13,9 @@ namespace GameProject0
         private GraphicsDeviceManager _graphicsDeviceManager;
         private Texture2D _whitePixelTexture;
 
+        private string _statusMessage;
+        private double _statusMessageTimer;
+
         public void Initialize(ScreenManager screenManager, ContentManager content, GraphicsDeviceManager graphicsDeviceManager)
         {
             _screenManager = screenManager;
@@ -30,13 +33,25 @@ namespace GameProject0
 
         public void Update(GameTime gameTime, InputManager inputManager)
         {
-            if (inputManager.Exit)
+            if (inputManager.MenuBack)
             {
                 _screenManager.LoadScreen(new TitleScreen());
             }
-            if (inputManager.GunModeToggle)
+
+            if (_statusMessageTimer > 0)
+            {
+                _statusMessageTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (_statusMessageTimer <= 0)
+                {
+                    _statusMessage = null;
+                }
+            }
+
+            if (inputManager.CheatActivated)
             {
                 Game1.GunModeActive = !Game1.GunModeActive;
+                _statusMessage = "CHEAT ACTIVATED";
+                _statusMessageTimer = 2.0;
             }
         }
 
@@ -48,15 +63,16 @@ namespace GameProject0
             string[] controls = {
                 "CONTROLS",
                 "",
-                "A/D or <-/-> : MOVE",
-                "E : ATTACK",
-                "SPACE : DODGE",
-                "ENTER : SELECT",
+                "A/D or <-/-> or L-Stick : MOVE",
+                "E or X : ATTACK",
+                "SPACE or B : DODGE",
+                "ENTER or A : SELECT",
+                "Q or Y : USE POTION",
                 "",
                 "F5 : SAVE GAME",
                 "F9 : LOAD GAME",
                 "",
-                "ESC : BACK / EXIT"
+                "ESC or Circle : BACK / EXIT"
             };
 
             float lineSpacing = 40f;
@@ -97,11 +113,37 @@ namespace GameProject0
                 );
                 spriteBatch.DrawString(_spriteFont, controls[i], textPosition, Color.White);
             }
+
+            if (!string.IsNullOrEmpty(_statusMessage))
+            {
+                float msgPadding = 10f;
+                float msgOutlineThickness = 2f;
+
+                Vector2 textSize = _spriteFont.MeasureString(_statusMessage);
+                Vector2 msgPosition = new Vector2(viewport.Width / 2 - textSize.X / 2, viewport.Height - 100);
+
+                Rectangle msgBackgroundRect = new Rectangle(
+                    (int)(msgPosition.X - msgPadding),
+                    (int)(msgPosition.Y - msgPadding),
+                    (int)(textSize.X + msgPadding * 2),
+                    (int)(textSize.Y + msgPadding * 2)
+                );
+                Rectangle msgOutlineRect = new Rectangle(
+                    msgBackgroundRect.X - (int)msgOutlineThickness,
+                    msgBackgroundRect.Y - (int)msgOutlineThickness,
+                    msgBackgroundRect.Width + (int)(msgOutlineThickness * 2),
+                    msgBackgroundRect.Height + (int)(msgOutlineThickness * 2)
+                );
+
+                spriteBatch.Draw(_whitePixelTexture, msgOutlineRect, Color.White);
+                spriteBatch.Draw(_whitePixelTexture, msgBackgroundRect, new Color(0, 0, 139));
+                spriteBatch.DrawString(_spriteFont, _statusMessage, msgPosition, Color.White);
+            }
+
         }
 
         public void Draw3D(GameTime gameTime, GraphicsDevice graphicsDevice)
         {
-            // This screen has no 3D elements
         }
 
     }
